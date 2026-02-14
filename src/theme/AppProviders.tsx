@@ -8,12 +8,12 @@ interface AppSettingsContextValue {
   toggleRtl: () => void;
 }
 
-const AppSettingsContext = createContext<AppSettingsContextValue>({ rtl: false, toggleRtl: () => undefined });
+const AppSettingsContext = createContext<AppSettingsContextValue>({ rtl: true, toggleRtl: () => undefined });
 
 export const useAppSettings = () => useContext(AppSettingsContext);
 
 export const AppProviders = ({ children }: { children: React.ReactNode }) => {
-  const [rtl, setRtl] = useState(false);
+  const [rtl, setRtl] = useState(true);
   const theme = useMemo(() => getTheme(rtl), [rtl]);
 
   return (

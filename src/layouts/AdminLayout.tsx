@@ -27,12 +27,12 @@ const drawerWidth = 240;
 const collapsedWidth = 72;
 
 const navItems = [
-  { label: 'Dashboard', path: '/', icon: <DashboardIcon /> },
-  { label: 'Projects', path: '/projects', icon: <WorkspacesIcon /> },
-  { label: 'Tokens', path: '/tokens', icon: <TokenIcon /> },
-  { label: 'Transactions', path: '/transactions', icon: <ReceiptLongIcon /> },
-  { label: 'Bank Accounts', path: '/banks', icon: <AccountBalanceIcon /> },
-  { label: 'Orders', path: '/orders', icon: <ShoppingBagIcon /> }
+  { label: 'داشبورد', path: '/', icon: <DashboardIcon /> },
+  { label: 'پروژه‌ها', path: '/projects', icon: <WorkspacesIcon /> },
+  { label: 'توکن‌ها', path: '/tokens', icon: <TokenIcon /> },
+  { label: 'تراکنش‌ها', path: '/transactions', icon: <ReceiptLongIcon /> },
+  { label: 'حساب‌های بانکی', path: '/banks', icon: <AccountBalanceIcon /> },
+  { label: 'سفارش‌ها', path: '/orders', icon: <ShoppingBagIcon /> }
 ];
 
 export const AdminLayout = () => {
@@ -49,10 +49,10 @@ export const AdminLayout = () => {
             <MenuIcon />
           </IconButton>
           <Typography variant="h6" sx={{ flexGrow: 1, ml: 1 }}>
-            Adrian Admin
+            پنل مدیریت آدریان
           </Typography>
           <Stack direction="row" spacing={1} alignItems="center">
-            <Typography variant="body2">RTL</Typography>
+            <Typography variant="body2">حالت راست‌به‌چپ</Typography>
             <Switch checked={rtl} onChange={toggleRtl} />
           </Stack>
         </Toolbar>
