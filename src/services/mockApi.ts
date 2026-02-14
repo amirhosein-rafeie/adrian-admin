@@ -14,14 +14,14 @@ export const mockApi = {
   async update<T extends { id: number }>(source: T[], id: number, payload: Partial<T>): Promise<T> {
     await delay();
     const index = source.findIndex((item) => item.id === id);
-    if (index < 0) throw new Error('Item not found');
+    if (index < 0) throw new Error('آیتم پیدا نشد');
     source[index] = { ...source[index], ...payload };
     return structuredClone(source[index]);
   },
   async delete<T extends { id: number }>(source: T[], id: number): Promise<void> {
     await delay();
     const index = source.findIndex((item) => item.id === id);
-    if (index < 0) throw new Error('Item not found');
+    if (index < 0) throw new Error('آیتم پیدا نشد');
     source.splice(index, 1);
   }
 };

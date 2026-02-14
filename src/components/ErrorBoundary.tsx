@@ -15,10 +15,10 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, { hasError
       return (
         <Box p={4}>
           <Alert severity="error" sx={{ mb: 2 }}>
-            Something went wrong.
+            خطایی رخ داد.
           </Alert>
           <Button variant="contained" onClick={() => window.location.reload()}>
-            Reload
+            بارگذاری مجدد
           </Button>
         </Box>
       );

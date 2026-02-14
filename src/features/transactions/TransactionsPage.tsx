@@ -20,18 +20,18 @@ export const TransactionsPage = () => {
     mutationFn: ({ id, status }: { id: number; status: TransactionStatus }) => mockApi.update(db.transactions, id, { status }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
-      notify('Status updated');
+      notify('وضعیت با موفقیت به‌روزرسانی شد');
     }
   });
 
   const columns: GridColDef[] = [
-    { field: 'id', headerName: 'ID', width: 80 },
-    { field: 'user', headerName: 'User', flex: 1 },
-    { field: 'tokenId', headerName: 'Token', flex: 1, valueGetter: (v) => db.tokens.find((t) => t.id === v)?.token_name ?? '-' },
-    { field: 'amount', headerName: 'Amount', width: 120 },
+    { field: 'id', headerName: 'شناسه', width: 80 },
+    { field: 'user', headerName: 'کاربر', flex: 1 },
+    { field: 'tokenId', headerName: 'توکن', flex: 1, valueGetter: (v) => db.tokens.find((t) => t.id === v)?.token_name ?? '-' },
+    { field: 'amount', headerName: 'مقدار', width: 120 },
     {
       field: 'status',
-      headerName: 'Status',
+      headerName: 'وضعیت',
       width: 180,
       renderCell: (p) => (
         <TextField
@@ -40,23 +40,23 @@ export const TransactionsPage = () => {
           value={p.value}
           onChange={(e) => statusMutation.mutate({ id: p.row.id, status: e.target.value as TransactionStatus })}
         >
-          <MenuItem value="pending">pending</MenuItem>
-          <MenuItem value="success">success</MenuItem>
-          <MenuItem value="failed">failed</MenuItem>
+          <MenuItem value="pending">در انتظار</MenuItem>
+          <MenuItem value="success">موفق</MenuItem>
+          <MenuItem value="failed">ناموفق</MenuItem>
         </TextField>
       )
     },
-    { field: 'statusLabel', headerName: 'Badge', width: 120, renderCell: (p) => <StatusChip status={p.row.status} />, sortable: false },
-    { field: 'created_at', headerName: 'Created', width: 120 }
+    { field: 'statusLabel', headerName: 'نشان', width: 120, renderCell: (p) => <StatusChip status={p.row.status} />, sortable: false },
+    { field: 'created_at', headerName: 'تاریخ ایجاد', width: 120 }
   ];
 
   return (
     <>
-      <PageHeader title="Transactions" subtitle="Read-only with inline status update and detail drawer" />
+      <PageHeader title="تراکنش‌ها" subtitle="نمایش اطلاعات و ویرایش سریع وضعیت" />
       <DataTable rows={data} columns={columns} loading={isLoading} onRowClick={(params) => setDrawer(params.row)} />
       <Drawer anchor="right" open={!!drawer} onClose={() => setDrawer(null)}>
         <Stack p={3} spacing={2} width={320}>
-          <Typography variant="h6">Transaction Details</Typography>
+          <Typography variant="h6">جزئیات تراکنش</Typography>
           {drawer ? Object.entries(drawer).map(([k, v]) => <Typography key={k}><strong>{k}:</strong> {String(v)}</Typography>) : null}
         </Stack>
       </Drawer>

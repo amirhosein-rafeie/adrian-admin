@@ -4,15 +4,15 @@ import { db } from '@/services/mockDb';
 
 export const DashboardPage = () => {
   const stats = [
-    { label: 'Projects', value: db.projects.length },
-    { label: 'Tokens', value: db.tokens.length },
-    { label: 'Transactions', value: db.transactions.length },
-    { label: 'Orders', value: db.orders.length }
+    { label: 'پروژه‌ها', value: db.projects.length },
+    { label: 'توکن‌ها', value: db.tokens.length },
+    { label: 'تراکنش‌ها', value: db.transactions.length },
+    { label: 'سفارش‌ها', value: db.orders.length }
   ];
 
   return (
     <>
-      <PageHeader title="Dashboard" subtitle="Overview of your admin data" />
+      <PageHeader title="داشبورد" subtitle="نمای کلی اطلاعات پنل مدیریت" />
       <Grid container spacing={2}>
         {stats.map((item) => (
           <Grid item xs={12} sm={6} md={3} key={item.label}>

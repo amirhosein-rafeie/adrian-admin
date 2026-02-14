@@ -16,7 +16,7 @@ export const getTheme = (rtl: boolean) =>
       borderRadius: 12
     },
     typography: {
-      fontFamily: 'Inter, Roboto, system-ui, sans-serif',
+      fontFamily: 'Vazirmatn, IRANSansX, Inter, Roboto, system-ui, sans-serif',
       h5: { fontWeight: 700 }
     },
     components: {

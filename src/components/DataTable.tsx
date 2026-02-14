@@ -1,4 +1,4 @@
-import { DataGrid, DataGridProps } from '@mui/x-data-grid';
+import { DataGrid, DataGridProps, faIR } from '@mui/x-data-grid';
 import { Box, Skeleton } from '@mui/material';
 
 export const DataTable = (props: DataGridProps) => (
@@ -9,6 +9,7 @@ export const DataTable = (props: DataGridProps) => (
       <DataGrid
         disableRowSelectionOnClick
         pageSizeOptions={[5, 10, 20]}
+        localeText={faIR.components.MuiDataGrid.defaultProps.localeText}
         initialState={{ pagination: { paginationModel: { pageSize: 10, page: 0 } } }}
         {...props}
       />
