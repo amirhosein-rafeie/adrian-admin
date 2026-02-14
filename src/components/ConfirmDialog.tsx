@@ -13,9 +13,9 @@ export const ConfirmDialog = ({ open, title, description, onClose, onConfirm }: 
     <DialogTitle>{title}</DialogTitle>
     <DialogContent>{description}</DialogContent>
     <DialogActions>
-      <Button onClick={onClose}>Cancel</Button>
+      <Button onClick={onClose}>انصراف</Button>
       <Button color="error" variant="contained" onClick={onConfirm}>
-        Confirm
+        تایید
       </Button>
     </DialogActions>
   </Dialog>

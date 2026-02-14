@@ -11,4 +11,15 @@ const colors: Record<string, 'success' | 'warning' | 'error' | 'default' | 'info
   rejected: 'error'
 };
 
-export const StatusChip = ({ status }: { status: string }) => <Chip size="small" label={status} color={colors[status] ?? 'info'} />;
+const labels: Record<string, string> = {
+  active: 'فعال',
+  inactive: 'غیرفعال',
+  pending: 'در انتظار',
+  success: 'موفق',
+  failed: 'ناموفق',
+  processing: 'در حال پردازش',
+  completed: 'تکمیل‌شده',
+  rejected: 'ردشده'
+};
+
+export const StatusChip = ({ status }: { status: string }) => <Chip size="small" label={labels[status] ?? status} color={colors[status] ?? 'info'} />;

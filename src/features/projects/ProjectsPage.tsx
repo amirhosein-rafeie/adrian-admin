@@ -17,7 +17,7 @@ import { db } from '@/services/mockDb';
 import { queryClient } from '@/services/queryClient';
 import { Project } from '@/types/models';
 
-const schema = z.object({ title: z.string().min(2), description: z.string().min(3), status: z.enum(['active', 'inactive']) });
+const schema = z.object({ title: z.string().min(2, 'حداقل ۲ کاراکتر وارد کنید'), description: z.string().min(3, 'حداقل ۳ کاراکتر وارد کنید'), status: z.enum(['active', 'inactive']) });
 type FormValues = z.infer<typeof schema>;
 
 export const ProjectsPage = () => {
@@ -35,7 +35,7 @@ export const ProjectsPage = () => {
     mutationFn: (values: FormValues) => mockApi.create(db.projects, { ...values, created_at: new Date().toISOString().slice(0, 10) }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
-      notify('Project created');
+      notify('پروژه با موفقیت ایجاد شد');
     }
   });
 
@@ -43,7 +43,7 @@ export const ProjectsPage = () => {
     mutationFn: (values: FormValues) => mockApi.update(db.projects, selected!.id, values),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
-      notify('Project updated');
+      notify('پروژه با موفقیت ویرایش شد');
     }
   });
 
@@ -51,7 +51,7 @@ export const ProjectsPage = () => {
     mutationFn: (id: number) => mockApi.delete(db.projects, id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
-      notify('Project deleted');
+      notify('پروژه حذف شد');
     }
   });
 
@@ -61,14 +61,14 @@ export const ProjectsPage = () => {
   );
 
   const columns: GridColDef[] = [
-    { field: 'id', headerName: 'ID', width: 80 },
-    { field: 'title', headerName: 'Title', flex: 1 },
-    { field: 'description', headerName: 'Description', flex: 1.2 },
-    { field: 'status', headerName: 'Status', width: 120, renderCell: (p) => <StatusChip status={p.value} /> },
-    { field: 'created_at', headerName: 'Created At', width: 130 },
+    { field: 'id', headerName: 'شناسه', width: 80 },
+    { field: 'title', headerName: 'عنوان', flex: 1 },
+    { field: 'description', headerName: 'توضیحات', flex: 1.2 },
+    { field: 'status', headerName: 'وضعیت', width: 120, renderCell: (p) => <StatusChip status={p.value} /> },
+    { field: 'created_at', headerName: 'تاریخ ایجاد', width: 130 },
     {
       field: 'actions',
-      headerName: 'Actions',
+      headerName: 'عملیات',
       width: 160,
       sortable: false,
       renderCell: (p) => (
@@ -76,8 +76,8 @@ export const ProjectsPage = () => {
           <Button size="small" onClick={() => {
             setSelected(p.row);
             form.reset({ title: p.row.title, description: p.row.description, status: p.row.status });
-          }}>Edit</Button>
-          <Button size="small" color="error" onClick={() => setConfirmId(p.row.id)}>Delete</Button>
+          }}>ویرایش</Button>
+          <Button size="small" color="error" onClick={() => setConfirmId(p.row.id)}>حذف</Button>
         </Stack>
       )
     }
@@ -86,20 +86,20 @@ export const ProjectsPage = () => {
   return (
     <>
       <PageHeader
-        title="Projects"
-        subtitle="Manage projects with full CRUD"
-        action={<Button variant="contained" onClick={() => { setSelected({} as Project); form.reset({ title: '', description: '', status: 'active' }); }}>Create Project</Button>}
+        title="پروژه‌ها"
+        subtitle="مدیریت کامل پروژه‌ها"
+        action={<Button variant="contained" onClick={() => { setSelected({} as Project); form.reset({ title: '', description: '', status: 'active' }); }}>ایجاد پروژه</Button>}
       />
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} mb={2}>
-        <TextField label="Search" value={search} onChange={(e) => setSearch(e.target.value)} />
-        <TextField select label="Status" value={status} onChange={(e) => setStatus(e.target.value)} sx={{ width: 180 }}>
-          <MenuItem value="all">All</MenuItem><MenuItem value="active">Active</MenuItem><MenuItem value="inactive">Inactive</MenuItem>
+        <TextField label="جستجو" value={search} onChange={(e) => setSearch(e.target.value)} />
+        <TextField select label="وضعیت" value={status} onChange={(e) => setStatus(e.target.value)} sx={{ width: 180 }}>
+          <MenuItem value="all">همه</MenuItem><MenuItem value="active">فعال</MenuItem><MenuItem value="inactive">غیرفعال</MenuItem>
         </TextField>
       </Stack>
       {filtered.length === 0 && !isLoading ? <EmptyState /> : <DataTable rows={filtered} columns={columns} loading={isLoading} />}
       <FormModal
         open={!!selected}
-        title={selected?.id ? 'Edit Project' : 'Create Project'}
+        title={selected?.id ? 'ویرایش پروژه' : 'ایجاد پروژه'}
         onClose={() => setSelected(null)}
         onSubmit={form.handleSubmit(async (values) => {
           if (selected?.id) await updateMutation.mutateAsync(values);
@@ -108,17 +108,17 @@ export const ProjectsPage = () => {
         })}
       >
         <Stack spacing={2} mt={1}>
-          <TextField label="Title" {...form.register('title')} error={!!form.formState.errors.title} helperText={form.formState.errors.title?.message} />
-          <TextField label="Description" {...form.register('description')} error={!!form.formState.errors.description} helperText={form.formState.errors.description?.message} />
-          <TextField select label="Status" {...form.register('status')}>
-            <MenuItem value="active">Active</MenuItem><MenuItem value="inactive">Inactive</MenuItem>
+          <TextField label="عنوان" {...form.register('title')} error={!!form.formState.errors.title} helperText={form.formState.errors.title?.message} />
+          <TextField label="توضیحات" {...form.register('description')} error={!!form.formState.errors.description} helperText={form.formState.errors.description?.message} />
+          <TextField select label="وضعیت" {...form.register('status')}>
+            <MenuItem value="active">فعال</MenuItem><MenuItem value="inactive">غیرفعال</MenuItem>
           </TextField>
         </Stack>
       </FormModal>
       <ConfirmDialog
         open={confirmId !== null}
-        title="Delete Project"
-        description="Are you sure you want to delete this project?"
+        title="حذف پروژه"
+        description="آیا از حذف این پروژه مطمئن هستید؟"
         onClose={() => setConfirmId(null)}
         onConfirm={async () => {
           await deleteMutation.mutateAsync(confirmId!);

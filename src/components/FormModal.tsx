@@ -13,9 +13,9 @@ export const FormModal = ({ open, title, onClose, onSubmit, children }: Props) =
     <DialogTitle>{title}</DialogTitle>
     <DialogContent sx={{ pt: '12px !important' }}>{children}</DialogContent>
     <DialogActions>
-      <Button onClick={onClose}>Cancel</Button>
+      <Button onClick={onClose}>انصراف</Button>
       <Button variant="contained" onClick={onSubmit}>
-        Save
+        ذخیره
       </Button>
     </DialogActions>
   </Dialog>
