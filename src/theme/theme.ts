@@ -1,10 +1,10 @@
 import { createTheme } from '@mui/material';
 
-export const getTheme = (darkMode: boolean) =>
+export const getTheme = () =>
   createTheme({
     direction: 'rtl',
     palette: {
-      mode: darkMode ? 'dark' : 'light',
+      mode: 'light',
       primary: {
         main: '#7C8CFF'
       },
@@ -12,8 +12,8 @@ export const getTheme = (darkMode: boolean) =>
         main: '#5EEAD4'
       },
       background: {
-        default: darkMode ? '#0B1120' : '#f4f6fb',
-        paper: darkMode ? '#111A2F' : '#ffffff'
+        default: '#f4f6fb',
+        paper: '#ffffff'
       }
     },
     shape: {
@@ -36,13 +36,14 @@ export const getTheme = (darkMode: boolean) =>
 
           html, body, #root {
             font-family: 'Vazirmatn', IRANSansX, Inter, Roboto, system-ui, sans-serif;
+            overflow-x: hidden;
           }
         `
       },
       MuiCard: {
         styleOverrides: {
           root: {
-            boxShadow: darkMode ? '0 10px 30px rgba(2, 6, 23, 0.45)' : '0 8px 24px rgba(15, 23, 42, 0.06)',
+            boxShadow: '0 8px 24px rgba(15, 23, 42, 0.06)',
             backgroundImage: 'none'
           }
         }
