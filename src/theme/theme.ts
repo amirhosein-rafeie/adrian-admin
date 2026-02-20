@@ -24,6 +24,21 @@ export const getTheme = (darkMode: boolean) =>
       h5: { fontWeight: 700 }
     },
     components: {
+      MuiCssBaseline: {
+        styleOverrides: `
+          @font-face {
+            font-family: 'Vazirmatn';
+            font-style: normal;
+            font-weight: 400;
+            font-display: swap;
+            src: url('/fonts/Vazirmatn-Regular.ttf') format('truetype');
+          }
+
+          html, body, #root {
+            font-family: 'Vazirmatn', IRANSansX, Inter, Roboto, system-ui, sans-serif;
+          }
+        `
+      },
       MuiCard: {
         styleOverrides: {
           root: {
