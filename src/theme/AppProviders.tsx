@@ -4,15 +4,11 @@ import { SnackbarProvider } from '@/hooks/useSnackbar';
 import { getTheme } from './theme';
 
 interface AppSettingsContextValue {
-  rtl: boolean;
-  toggleRtl: () => void;
   darkMode: boolean;
   toggleDarkMode: () => void;
 }
 
 const AppSettingsContext = createContext<AppSettingsContextValue>({
-  rtl: true,
-  toggleRtl: () => undefined,
   darkMode: true,
   toggleDarkMode: () => undefined
 });
@@ -20,15 +16,12 @@ const AppSettingsContext = createContext<AppSettingsContextValue>({
 export const useAppSettings = () => useContext(AppSettingsContext);
 
 export const AppProviders = ({ children }: { children: React.ReactNode }) => {
-  const [rtl, setRtl] = useState(true);
   const [darkMode, setDarkMode] = useState(true);
-  const theme = useMemo(() => getTheme(rtl, darkMode), [rtl, darkMode]);
+  const theme = useMemo(() => getTheme(darkMode), [darkMode]);
 
   return (
     <AppSettingsContext.Provider
       value={{
-        rtl,
-        toggleRtl: () => setRtl((v) => !v),
         darkMode,
         toggleDarkMode: () => setDarkMode((v) => !v)
       }}

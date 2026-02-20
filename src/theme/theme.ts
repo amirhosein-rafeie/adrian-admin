@@ -1,8 +1,8 @@
 import { createTheme } from '@mui/material';
 
-export const getTheme = (rtl: boolean, darkMode: boolean) =>
+export const getTheme = (darkMode: boolean) =>
   createTheme({
-    direction: rtl ? 'rtl' : 'ltr',
+    direction: 'ltr',
     palette: {
       mode: darkMode ? 'dark' : 'light',
       primary: {

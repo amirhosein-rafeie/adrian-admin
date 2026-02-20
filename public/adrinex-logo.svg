@@ -1,0 +1,29 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" fill="transparent"/>
+  <g transform="translate(58,58)">
+    <rect x="72" y="82" width="42" height="12" rx="4" fill="#9A9A9A"/>
+    <rect x="20" y="112" width="96" height="14" rx="5" fill="#9A9A9A"/>
+    <rect x="0" y="148" width="128" height="16" rx="5" fill="#9A9A9A"/>
+    <rect x="22" y="182" width="236" height="16" rx="5" fill="#9A9A9A"/>
+    <rect x="210" y="212" width="106" height="14" rx="5" fill="#9A9A9A"/>
+    <rect x="228" y="240" width="72" height="12" rx="4" fill="#9A9A9A"/>
+
+    <polygon points="120,78 138,78 186,182 166,182" fill="url(#grad1)"/>
+    <polygon points="58,210 78,210 58,252 38,252" fill="url(#grad1)"/>
+
+    <path d="M0 356 L12 332 L24 356 H18 L12 342 L6 356H0Z" fill="#F2F2F2"/>
+    <path d="M30 332H44C53 332 60 339 60 348V348C60 357 53 364 44 364H30V332ZM36 338V358H44C49 358 54 353 54 348V348C54 343 49 338 44 338H36Z" fill="#F2F2F2"/>
+    <path d="M68 332H83C90 332 96 338 96 345C96 350 93 354 89 356L97 364H90L83 357H74V364H68V332ZM74 338V351H82C86 351 90 348 90 345C90 341 86 338 82 338H74Z" fill="#F2F2F2"/>
+    <path d="M104 332H110V364H104V332Z" fill="#F2F2F2"/>
+    <path d="M118 332H124L144 354V332H150V364H144L124 342V364H118V332Z" fill="#F2F2F2"/>
+    <path d="M158 332H182V338H164V345H180V351H164V358H182V364H158V332Z" fill="#F2F2F2"/>
+    <path d="M188 332H195L203 345L211 332H218L207 348L218 364H211L203 351L195 364H188L199 348L188 332Z" fill="#F2F2F2"/>
+
+    <defs>
+      <linearGradient id="grad1" x1="38" y1="78" x2="186" y2="252" gradientUnits="userSpaceOnUse">
+        <stop stop-color="#FF4A2A"/>
+        <stop offset="1" stop-color="#FF9A1F"/>
+      </linearGradient>
+    </defs>
+  </g>
+</svg>

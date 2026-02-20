@@ -2,6 +2,7 @@ import {
   AppBar,
   Box,
   Drawer,
+  Divider,
   IconButton,
   List,
   ListItemButton,
@@ -43,10 +44,10 @@ export const AdminLayout = () => {
   const location = useLocation();
   const theme = useTheme();
   const [collapsed, setCollapsed] = useState(false);
-  const { rtl, toggleRtl, darkMode, toggleDarkMode } = useAppSettings();
+  const { darkMode, toggleDarkMode } = useAppSettings();
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh' }} dir={rtl ? 'rtl' : 'ltr'}>
+    <Box sx={{ display: 'flex', minHeight: '100vh' }}>
       <AppBar position="fixed" color="inherit" elevation={0} sx={{ borderBottom: '1px solid', borderColor: 'divider' }}>
         <Toolbar>
           <IconButton onClick={() => setCollapsed((v) => !v)}>
@@ -59,55 +60,44 @@ export const AdminLayout = () => {
             {darkMode ? <DarkModeIcon fontSize="small" color="primary" /> : <LightModeIcon fontSize="small" color="primary" />}
             <Typography variant="body2">حالت تیره</Typography>
             <Switch checked={darkMode} onChange={toggleDarkMode} />
-            <Typography variant="body2">حالت راست‌به‌چپ</Typography>
-            <Switch checked={rtl} onChange={toggleRtl} />
           </Stack>
         </Toolbar>
       </AppBar>
       <Drawer
         variant="permanent"
+        anchor="right"
         sx={{
           width: collapsed ? collapsedWidth : drawerWidth,
           flexShrink: 0,
           '& .MuiDrawer-paper': {
             width: collapsed ? collapsedWidth : drawerWidth,
             boxSizing: 'border-box',
-            borderRight: '1px solid',
+            borderLeft: '1px solid',
             borderColor: 'divider',
             mt: 8
           }
         }}
       >
-        <Stack direction="row" alignItems="center" spacing={1.5} sx={{ px: 2, pt: 2, pb: 1 }}>
+        <Stack alignItems="center" spacing={1} sx={{ px: 2, pt: 2, pb: 1 }}>
           <Box
+            component="img"
+            src="/adrinex-logo.svg"
+            alt="Adrinex Logo"
             sx={{
-              width: 36,
-              height: 36,
-              borderRadius: 2,
-              background: darkMode
-                ? 'linear-gradient(135deg, rgba(124,140,255,0.95), rgba(94,234,212,0.75))'
-                : 'linear-gradient(135deg, #3F51B5, #00B8A9)',
-              color: '#fff',
-              display: 'grid',
-              placeItems: 'center',
-              fontWeight: 700,
-              fontSize: 14,
-              boxShadow: darkMode ? '0 10px 20px rgba(0,0,0,0.35)' : '0 8px 20px rgba(63,81,181,0.25)'
+              width: collapsed ? 36 : 122,
+              height: 'auto',
+              borderRadius: 1,
+              p: collapsed ? 0.5 : 0,
+              bgcolor: darkMode ? 'transparent' : '#000'
             }}
-          >
-            AD
-          </Box>
+          />
           {!collapsed ? (
-            <Box>
-              <Typography variant="subtitle1" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
-                Adrian Admin
-              </Typography>
-              <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
-                Design System
-              </Typography>
-            </Box>
+            <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
+              ADRINEX Admin Panel
+            </Typography>
           ) : null}
         </Stack>
+        <Divider />
         <List>
           {navItems.map((item) => (
             <ListItemButton key={item.path} selected={location.pathname === item.path} onClick={() => navigate(item.path)}>
@@ -117,7 +107,7 @@ export const AdminLayout = () => {
           ))}
         </List>
       </Drawer>
-      <Box component="main" sx={{ flexGrow: 1, p: 3, mt: 8, ml: collapsed ? `${collapsedWidth}px` : `${drawerWidth}px` }}>
+      <Box component="main" sx={{ flexGrow: 1, p: 3, mt: 8, mr: collapsed ? `${collapsedWidth}px` : `${drawerWidth}px` }}>
         <Outlet />
       </Box>
     </Box>
