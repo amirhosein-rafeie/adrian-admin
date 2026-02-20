@@ -1,7 +1,7 @@
 import { Drawer, MenuItem, Stack, TextField, Typography } from '@mui/material';
 import { GridColDef } from '@mui/x-data-grid';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { DataTable } from '@/components/DataTable';
 import { PageHeader } from '@/components/PageHeader';
 import { StatusChip } from '@/components/StatusChip';
@@ -15,6 +15,14 @@ export const TransactionsPage = () => {
   const { data = [], isLoading } = useQuery({ queryKey: ['transactions'], queryFn: () => mockApi.getAll(db.transactions) });
   const [drawer, setDrawer] = useState<Transaction | null>(null);
   const { notify } = useSnackbar();
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [drawer]);
 
   const statusMutation = useMutation({
     mutationFn: ({ id, status }: { id: number; status: TransactionStatus }) => mockApi.update(db.transactions, id, { status }),
