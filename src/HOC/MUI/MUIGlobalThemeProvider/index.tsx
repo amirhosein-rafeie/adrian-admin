@@ -156,11 +156,6 @@ let theme = createTheme({
         disablePortal: true,
         noOptionsText: 'موردی یافت نشد',
         slotProps: {
-          listbox: {
-            sx: {
-              maxHeight: 180,
-            },
-          },
           paper: {
             sx: {
               border: (theme) => `1px solid ${theme.palette.divider}`,
