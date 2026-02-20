@@ -14,6 +14,7 @@
     "@hookform/resolvers": "^3.9.1",
     "@mui/icons-material": "^5.16.7",
     "@mui/material": "^5.16.7",
+    "@mui/stylis-plugin-rtl": "^7.3.8",
     "@mui/x-data-grid": "^7.18.0",
     "@tanstack/react-query": "^5.59.16",
     "react": "^18.3.1",
@@ -28,6 +29,7 @@
     "@types/node": "^25.2.3",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
+    "@types/stylis": "^4.2.7",
     "@vitejs/plugin-react": "^4.3.3",
     "typescript": "^5.6.3",
     "vite": "^5.4.10"
