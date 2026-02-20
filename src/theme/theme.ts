@@ -2,7 +2,7 @@ import { createTheme } from '@mui/material';
 
 export const getTheme = (darkMode: boolean) =>
   createTheme({
-    direction: 'ltr',
+    direction: 'rtl',
     palette: {
       mode: darkMode ? 'dark' : 'light',
       primary: {

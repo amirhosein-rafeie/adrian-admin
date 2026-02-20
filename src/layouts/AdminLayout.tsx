@@ -47,7 +47,7 @@ export const AdminLayout = () => {
   const { darkMode, toggleDarkMode } = useAppSettings();
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh' }} dir="rtl">
       <AppBar position="fixed" color="inherit" elevation={0} sx={{ borderBottom: '1px solid', borderColor: 'divider' }}>
         <Toolbar>
           <IconButton onClick={() => setCollapsed((v) => !v)}>
