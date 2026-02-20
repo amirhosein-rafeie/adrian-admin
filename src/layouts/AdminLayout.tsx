@@ -3,86 +3,63 @@ import {
   Box,
   Drawer,
   Divider,
-  IconButton,
   List,
   ListItemButton,
   ListItemIcon,
   ListItemText,
   Stack,
-  Switch,
   Toolbar,
-  useTheme,
   Typography,
-} from "@mui/material";
-import DashboardIcon from "@mui/icons-material/Dashboard";
-import WorkspacesIcon from "@mui/icons-material/Workspaces";
-import TokenIcon from "@mui/icons-material/Token";
-import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
-import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
-import ShoppingBagIcon from "@mui/icons-material/ShoppingBag";
-import MenuIcon from "@mui/icons-material/Menu";
-import DarkModeIcon from "@mui/icons-material/DarkMode";
-import LightModeIcon from "@mui/icons-material/LightMode";
-import { Outlet, useLocation, useNavigate } from "react-router-dom";
-import { useState } from "react";
-import { useAppSettings } from "@/theme/AppProviders";
+} from '@mui/material';
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import WorkspacesIcon from '@mui/icons-material/Workspaces';
+import TokenIcon from '@mui/icons-material/Token';
+import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
+import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
+import ShoppingBagIcon from '@mui/icons-material/ShoppingBag';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 
 const drawerWidth = 240;
-const collapsedWidth = 72;
 
 const navItems = [
-  { label: "داشبورد", path: "/", icon: <DashboardIcon /> },
-  { label: "پروژه‌ها", path: "/projects", icon: <WorkspacesIcon /> },
-  { label: "توکن‌ها", path: "/tokens", icon: <TokenIcon /> },
-  { label: "تراکنش‌ها", path: "/transactions", icon: <ReceiptLongIcon /> },
-  { label: "حساب‌های بانکی", path: "/banks", icon: <AccountBalanceIcon /> },
-  { label: "سفارش‌ها", path: "/orders", icon: <ShoppingBagIcon /> },
+  { label: 'داشبورد', path: '/', icon: <DashboardIcon /> },
+  { label: 'پروژه‌ها', path: '/projects', icon: <WorkspacesIcon /> },
+  { label: 'توکن‌ها', path: '/tokens', icon: <TokenIcon /> },
+  { label: 'تراکنش‌ها', path: '/transactions', icon: <ReceiptLongIcon /> },
+  { label: 'حساب‌های بانکی', path: '/banks', icon: <AccountBalanceIcon /> },
+  { label: 'سفارش‌ها', path: '/orders', icon: <ShoppingBagIcon /> },
 ];
 
 export const AdminLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const theme = useTheme();
-  const [collapsed, setCollapsed] = useState(false);
-  const { darkMode, toggleDarkMode } = useAppSettings();
 
   return (
-    <Box sx={{ display: "flex", minHeight: "100vh" }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh', overflowX: 'hidden' }}>
       <AppBar
         position="fixed"
         color="inherit"
         elevation={0}
-        sx={{ borderBottom: "1px solid", borderColor: "divider" }}
+        sx={{ borderBottom: '1px solid', borderColor: 'divider' }}
       >
         <Toolbar>
-          <IconButton onClick={() => setCollapsed((v) => !v)}>
-            <MenuIcon />
-          </IconButton>
-          <Typography variant="h6" sx={{ flexGrow: 1, ml: 1 }}>
+          <Typography variant="h6" sx={{ flexGrow: 1 }}>
             پنل مدیریت آدریان
           </Typography>
-          <Stack direction="row" spacing={1} alignItems="center">
-            {darkMode ? (
-              <DarkModeIcon fontSize="small" color="primary" />
-            ) : (
-              <LightModeIcon fontSize="small" color="primary" />
-            )}
-            <Typography variant="body2">حالت تیره</Typography>
-            <Switch checked={darkMode} onChange={toggleDarkMode} />
-          </Stack>
         </Toolbar>
       </AppBar>
+
       <Drawer
         variant="permanent"
         anchor="left"
         sx={{
-          width: collapsed ? collapsedWidth : drawerWidth,
+          width: drawerWidth,
           flexShrink: 0,
-          "& .MuiDrawer-paper": {
-            width: collapsed ? collapsedWidth : drawerWidth,
-            boxSizing: "border-box",
-            borderLeft: "1px solid",
-            borderColor: "divider",
+          '& .MuiDrawer-paper': {
+            width: drawerWidth,
+            boxSizing: 'border-box',
+            borderLeft: '1px solid',
+            borderColor: 'divider',
             mt: 8,
           },
         }}
@@ -93,11 +70,10 @@ export const AdminLayout = () => {
             src="/adrinex-logo.svg"
             alt="Adrinex Logo"
             sx={{
-              width: collapsed ? 36 : 122,
-              height: "auto",
+              width: 122,
+              height: 'auto',
               borderRadius: 1,
-              p: collapsed ? 0.5 : 0,
-              bgcolor: darkMode ? "transparent" : "#000",
+              bgcolor: '#000',
             }}
           />
         </Stack>
@@ -110,18 +86,21 @@ export const AdminLayout = () => {
               onClick={() => navigate(item.path)}
             >
               <ListItemIcon>{item.icon}</ListItemIcon>
-              {!collapsed ? <ListItemText primary={item.label} /> : null}
+              <ListItemText primary={item.label} />
             </ListItemButton>
           ))}
         </List>
       </Drawer>
+
       <Box
         component="main"
         sx={{
           flexGrow: 1,
           p: 3,
           mt: 8,
-          mr: collapsed ? `${collapsedWidth}px` : `${drawerWidth}px`,
+          mr: `${drawerWidth}px`,
+          minWidth: 0,
+          overflowX: 'hidden',
         }}
       >
         <Outlet />

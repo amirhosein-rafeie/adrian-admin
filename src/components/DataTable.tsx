@@ -38,19 +38,21 @@ export const DataTable = (props: DataGridProps) => {
   );
 
   return (
-    <Box sx={{ height: 520, width: '100%' }}>
-      {props.loading ? (
-        <Skeleton variant="rounded" height={520} />
-      ) : (
-        <DataGrid
-          disableRowSelectionOnClick
-          pageSizeOptions={[5, 10, 20]}
-          localeText={faLocaleText}
-          initialState={{ pagination: { paginationModel: { pageSize: 10, page: 0 } } }}
-          {...props}
-          columns={columns}
-        />
-      )}
+    <Box sx={{ width: '100%', overflowX: 'auto' }}>
+      <Box sx={{ minWidth: 0, width: 'max(100%, 960px)', height: 520 }}>
+        {props.loading ? (
+          <Skeleton variant="rounded" height={520} />
+        ) : (
+          <DataGrid
+            disableRowSelectionOnClick
+            pageSizeOptions={[5, 10, 20]}
+            localeText={faLocaleText}
+            initialState={{ pagination: { paginationModel: { pageSize: 10, page: 0 } } }}
+            {...props}
+            columns={columns}
+          />
+        )}
+      </Box>
     </Box>
   );
 };
