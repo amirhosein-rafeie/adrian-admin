@@ -1,15 +1,19 @@
 import { createTheme } from '@mui/material';
 
-export const getTheme = (rtl: boolean) =>
+export const getTheme = (rtl: boolean, darkMode: boolean) =>
   createTheme({
     direction: rtl ? 'rtl' : 'ltr',
     palette: {
-      mode: 'light',
+      mode: darkMode ? 'dark' : 'light',
       primary: {
-        main: '#3F51B5'
+        main: '#7C8CFF'
+      },
+      secondary: {
+        main: '#5EEAD4'
       },
       background: {
-        default: '#f4f6fb'
+        default: darkMode ? '#0B1120' : '#f4f6fb',
+        paper: darkMode ? '#111A2F' : '#ffffff'
       }
     },
     shape: {
@@ -23,7 +27,22 @@ export const getTheme = (rtl: boolean) =>
       MuiCard: {
         styleOverrides: {
           root: {
-            boxShadow: '0 8px 24px rgba(15, 23, 42, 0.06)'
+            boxShadow: darkMode ? '0 10px 30px rgba(2, 6, 23, 0.45)' : '0 8px 24px rgba(15, 23, 42, 0.06)',
+            backgroundImage: 'none'
+          }
+        }
+      },
+      MuiAppBar: {
+        styleOverrides: {
+          root: {
+            backgroundImage: 'none'
+          }
+        }
+      },
+      MuiDrawer: {
+        styleOverrides: {
+          paper: {
+            backgroundImage: 'none'
           }
         }
       }
