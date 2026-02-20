@@ -20,6 +20,7 @@ import ShoppingBagIcon from '@mui/icons-material/ShoppingBag';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 
 const drawerWidth = 240;
+const compactDrawerWidth = 80;
 
 const navItems = [
   { label: 'داشبورد', path: '/', icon: <DashboardIcon /> },
@@ -35,7 +36,7 @@ export const AdminLayout = () => {
   const location = useLocation();
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', overflowX: 'hidden' }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh', overflowX: 'hidden', width: '100%' }}>
       <AppBar
         position="fixed"
         color="inherit"
@@ -53,14 +54,15 @@ export const AdminLayout = () => {
         variant="permanent"
         anchor="left"
         sx={{
-          width: drawerWidth,
+          width: { xs: compactDrawerWidth, md: drawerWidth },
           flexShrink: 0,
           '& .MuiDrawer-paper': {
-            width: drawerWidth,
+            width: { xs: compactDrawerWidth, md: drawerWidth },
             boxSizing: 'border-box',
             borderLeft: '1px solid',
             borderColor: 'divider',
             mt: 8,
+            overflowX: 'hidden',
           },
         }}
       >
@@ -70,10 +72,11 @@ export const AdminLayout = () => {
             src="/adrinex-logo.svg"
             alt="Adrinex Logo"
             sx={{
-              width: 122,
+              width: { xs: 44, md: 122 },
               height: 'auto',
               borderRadius: 1,
               bgcolor: '#000',
+              p: { xs: 0.5, md: 0 },
             }}
           />
         </Stack>
@@ -86,7 +89,7 @@ export const AdminLayout = () => {
               onClick={() => navigate(item.path)}
             >
               <ListItemIcon>{item.icon}</ListItemIcon>
-              <ListItemText primary={item.label} />
+              <ListItemText primary={item.label} sx={{ display: { xs: 'none', md: 'block' } }} />
             </ListItemButton>
           ))}
         </List>
@@ -96,9 +99,9 @@ export const AdminLayout = () => {
         component="main"
         sx={{
           flexGrow: 1,
-          p: 3,
+          p: { xs: 1.5, md: 3 },
           mt: 8,
-          mr: `${drawerWidth}px`,
+          mr: { xs: `${compactDrawerWidth}px`, md: `${drawerWidth}px` },
           minWidth: 0,
           overflowX: 'hidden',
         }}
