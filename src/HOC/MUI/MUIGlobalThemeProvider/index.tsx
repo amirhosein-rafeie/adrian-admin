@@ -59,7 +59,7 @@ let theme = createTheme({
     borderRadius: 12,
   },
   typography: {
-    fontFamily: 'IranSans',
+    fontFamily: 'Vazirmatn, IRANSansX, Inter, Roboto, system-ui, sans-serif',
     h1: { fontWeight: 700 },
     h2: { fontWeight: 700 },
     h3: { fontWeight: 700 },
@@ -70,12 +70,27 @@ let theme = createTheme({
   },
   components: {
     MuiCssBaseline: {
-      styleOverrides: {
-        body: {
-          backgroundImage:
-            'radial-gradient(circle at top right, rgba(255, 111, 60, 0.16), transparent 40%), radial-gradient(circle at bottom left, rgba(96, 165, 250, 0.1), transparent 50%)',
-        },
-      },
+      styleOverrides: `
+        @font-face {
+          font-family: 'Vazirmatn';
+          font-style: normal;
+          font-weight: 400;
+          font-display: swap;
+          src: url('/fonts/Vazirmatn-Regular.ttf') format('truetype');
+        }
+
+        html,
+        body,
+        #root {
+          font-family: 'Vazirmatn', IRANSansX, Inter, Roboto, system-ui, sans-serif;
+        }
+
+        body {
+          background-image:
+            radial-gradient(circle at top right, rgba(255, 111, 60, 0.16), transparent 40%),
+            radial-gradient(circle at bottom left, rgba(96, 165, 250, 0.1), transparent 50%);
+        }
+      `,
     },
     MuiTextField: {
       defaultProps: {
