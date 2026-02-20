@@ -54,7 +54,12 @@ export const TransactionsPage = () => {
     <>
       <PageHeader title="تراکنش‌ها" subtitle="نمایش اطلاعات و ویرایش سریع وضعیت" />
       <DataTable rows={data} columns={columns} loading={isLoading} onRowClick={(params) => setDrawer(params.row)} />
-      <Drawer anchor="right" open={!!drawer} onClose={() => setDrawer(null)}>
+      <Drawer
+        anchor="right"
+        open={!!drawer}
+        onClose={() => setDrawer(null)}
+        ModalProps={{ disableScrollLock: true }}
+      >
         <Stack p={3} spacing={2} width={320}>
           <Typography variant="h6">جزئیات تراکنش</Typography>
           {drawer ? Object.entries(drawer).map(([k, v]) => <Typography key={k}><strong>{k}:</strong> {String(v)}</Typography>) : null}
