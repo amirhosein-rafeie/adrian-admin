@@ -1,19 +1,22 @@
-import { Navigate, Route, Routes } from 'react-router-dom';
 import { BrowserRouter } from 'react-router-dom';
-import { AdminLayout } from '@/layouts/AdminLayout';
+import { Navigate, Route, Routes } from 'react-router-dom';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { LoginPage } from '@/features/auth/LoginPage';
+import { BanksPage } from '@/features/banks/BanksPage';
 import { DashboardPage } from '@/features/dashboard/DashboardPage';
+import { OrdersPage } from '@/features/orders/OrdersPage';
 import { ProjectsPage } from '@/features/projects/ProjectsPage';
 import { TokensPage } from '@/features/tokens/TokensPage';
 import { TransactionsPage } from '@/features/transactions/TransactionsPage';
-import { BanksPage } from '@/features/banks/BanksPage';
-import { OrdersPage } from '@/features/orders/OrdersPage';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { AdminLayout } from '@/layouts/AdminLayout';
+import { auth } from '@/services/auth';
 import { RoleGuard } from './RoleGuard';
 
 export const AppRouter = () => (
   <BrowserRouter>
     <ErrorBoundary>
       <Routes>
+        <Route path="/login" element={auth.isAuthenticated() ? <Navigate to="/" replace /> : <LoginPage />} />
         <Route
           element={
             <RoleGuard>
@@ -27,8 +30,8 @@ export const AppRouter = () => (
           <Route path="/transactions" element={<TransactionsPage />} />
           <Route path="/banks" element={<BanksPage />} />
           <Route path="/orders" element={<OrdersPage />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </ErrorBoundary>
   </BrowserRouter>

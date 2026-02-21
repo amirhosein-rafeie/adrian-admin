@@ -7,6 +7,7 @@ const colors: Record<string, 'success' | 'warning' | 'error' | 'default' | 'info
   success: 'success',
   failed: 'error',
   processing: 'warning',
+  finished: 'success',
   completed: 'success',
   rejected: 'error'
 };
@@ -18,6 +19,7 @@ const labels: Record<string, string> = {
   success: 'موفق',
   failed: 'ناموفق',
   processing: 'در حال پردازش',
+  finished: 'تکمیل‌شده',
   completed: 'تکمیل‌شده',
   rejected: 'ردشده'
 };
