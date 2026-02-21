@@ -11,9 +11,10 @@ import { FormModal } from '@/components/FormModal';
 import { PageHeader } from '@/components/PageHeader';
 import { StatusChip } from '@/components/StatusChip';
 import { useSnackbar } from '@/hooks/useSnackbar';
-import { projectsApi } from '@/services/projectsApi';
 import { queryClient } from '@/services/queryClient';
-import type { postAdminProjectsRequestBodyJson } from '@/share/utils/api/__generated__/types';
+import type { get200AdminProjectsResponseJson, postAdminProjectsRequestBodyJson } from '@/share/utils/api/__generated__/types';
+import { PROJECTS_LIST } from '@/share/constants';
+import { clientRequest } from '@/share/utils/api/clientRequest';
 
 const schema = z.object({
   name: z.string().min(2, 'حداقل ۲ کاراکتر وارد کنید'),
@@ -66,15 +67,18 @@ export const ProjectsPage = () => {
     }
   });
 
-  const { data = [], isLoading } = useQuery({
-    queryKey: ['projects'],
-    queryFn: projectsApi.getProjects
+  const { data, isPending, isError } = useQuery({
+    queryKey: [PROJECTS_LIST],
+    queryFn: () => clientRequest.GET('/admin/projects')
   });
 
   const createMutation = useMutation({
-    mutationFn: (values: postAdminProjectsRequestBodyJson) => projectsApi.createProject(values),
+    mutationFn: (values: postAdminProjectsRequestBodyJson) =>
+      clientRequest.POST('/admin/projects', {
+        body: values
+      }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      queryClient.invalidateQueries({ queryKey: [PROJECTS_LIST] });
       notify('پروژه با موفقیت ایجاد شد');
     },
     onError: (error: Error) => {
@@ -84,7 +88,7 @@ export const ProjectsPage = () => {
 
   const mappedRows: ProjectRow[] = useMemo(
     () =>
-      data.map(({ project }) => ({
+      ((data?.data as get200AdminProjectsResponseJson | undefined)?.projects ?? []).map(({ project }) => ({
         id: project.id,
         name: project.name,
         description: project.description ?? '-',
@@ -126,7 +130,7 @@ export const ProjectsPage = () => {
           <MenuItem value="finished">تکمیل‌شده</MenuItem>
         </TextField>
       </Stack>
-      {filtered.length === 0 && !isLoading ? <EmptyState /> : <DataTable rows={filtered} columns={columns} loading={isLoading} />}
+      {isError || (filtered.length === 0 && !isPending) ? <EmptyState /> : <DataTable rows={filtered} columns={columns} loading={isPending} />}
       <FormModal
         open={isCreateOpen}
         title="ایجاد پروژه"

@@ -10,16 +10,17 @@ import { mockApi } from '@/services/mockApi';
 import { db } from '@/services/mockDb';
 import { queryClient } from '@/services/queryClient';
 import { OrderStatus } from '@/types/models';
+import { ORDERS_LIST } from '@/share/constants';
 
 export const OrdersPage = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const { notify } = useSnackbar();
-  const { data = [], isLoading } = useQuery({ queryKey: ['orders'], queryFn: () => mockApi.getAll(db.orders) });
+  const { data = [], isLoading } = useQuery({ queryKey: [ORDERS_LIST], queryFn: () => mockApi.getAll(db.orders) });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, status }: { id: number; status: OrderStatus }) => mockApi.update(db.orders, id, { status }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: [ORDERS_LIST] });
       notify('وضعیت سفارش به‌روزرسانی شد');
     }
   });

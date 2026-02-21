@@ -1,4 +1,4 @@
-const TOKEN_COOKIE_KEY = 'access_token';
+import { TOKEN } from '@/share/constants';
 
 const getCookieValue = (name: string) => {
   const cookie = document.cookie
@@ -9,17 +9,17 @@ const getCookieValue = (name: string) => {
 };
 
 export const auth = {
-  tokenCookieKey: TOKEN_COOKIE_KEY,
+  tokenCookieKey: TOKEN,
   getToken() {
-    return getCookieValue(TOKEN_COOKIE_KEY);
+    return getCookieValue(TOKEN);
   },
   isAuthenticated() {
-    return Boolean(getCookieValue(TOKEN_COOKIE_KEY));
+    return Boolean(getCookieValue(TOKEN));
   },
   setToken(token: string) {
-    document.cookie = `${TOKEN_COOKIE_KEY}=${encodeURIComponent(token)}; Path=/; SameSite=Lax`;
+    document.cookie = `${TOKEN}=${encodeURIComponent(token)}; Path=/; SameSite=Lax`;
   },
   clearToken() {
-    document.cookie = `${TOKEN_COOKIE_KEY}=; Max-Age=0; Path=/; SameSite=Lax`;
+    document.cookie = `${TOKEN}=; Max-Age=0; Path=/; SameSite=Lax`;
   }
 };

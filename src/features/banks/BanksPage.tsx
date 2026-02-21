@@ -9,16 +9,17 @@ import { useSnackbar } from '@/hooks/useSnackbar';
 import { mockApi } from '@/services/mockApi';
 import { db } from '@/services/mockDb';
 import { queryClient } from '@/services/queryClient';
+import { BANKS_LIST } from '@/share/constants';
 
 export const BanksPage = () => {
-  const { data = [], isLoading } = useQuery({ queryKey: ['banks'], queryFn: () => mockApi.getAll(db.banks) });
+  const { data = [], isLoading } = useQuery({ queryKey: [BANKS_LIST], queryFn: () => mockApi.getAll(db.banks) });
   const [confirmId, setConfirmId] = useState<number | null>(null);
   const { notify } = useSnackbar();
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => mockApi.delete(db.banks, id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['banks'] });
+      queryClient.invalidateQueries({ queryKey: [BANKS_LIST] });
       notify('حساب بانکی حذف شد');
     }
   });

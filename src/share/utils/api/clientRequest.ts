@@ -1,10 +1,9 @@
-import { TOKEN } from '@/share/constants';
-import { deleteCookie, getCookie } from 'cookies-next';
+import { auth } from '@/services/auth';
 import type { Middleware } from 'openapi-fetch';
 import createClient from 'openapi-fetch';
 import { paths } from './__generated__/custom';
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '';
 
 export const clientRequest = createClient<paths>({
   baseUrl: BASE_URL,
@@ -28,14 +27,14 @@ export interface ApiError extends Error {
 
 const myMiddleware: Middleware = {
   async onRequest({ request }) {
-    const token = getCookie(TOKEN);
+    const token = auth.getToken();
     if (token) request.headers.set('authorization', `Bearer ${token}`);
     return request;
   },
 
   async onResponse({ response, request }) {
     if (response.status === 401) {
-      deleteCookie(TOKEN);
+      auth.clearToken();
       console.log(
         `TOKEN is removed because of 401 status code in ${request?.url} request`
       );
