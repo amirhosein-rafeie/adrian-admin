@@ -1,8 +1,9 @@
 import {
   AppBar,
   Box,
-  Drawer,
+  Button,
   Divider,
+  Drawer,
   List,
   ListItemButton,
   ListItemIcon,
@@ -18,6 +19,7 @@ import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import ShoppingBagIcon from '@mui/icons-material/ShoppingBag';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { auth } from '@/services/auth';
 
 const drawerWidth = 240;
 const compactDrawerWidth = 80;
@@ -47,6 +49,15 @@ export const AdminLayout = () => {
           <Typography variant="h6" sx={{ flexGrow: 1 }}>
             پنل مدیریت آدریان
           </Typography>
+          <Button
+            color="inherit"
+            onClick={() => {
+              auth.clearToken();
+              navigate('/login', { replace: true });
+            }}
+          >
+            خروج
+          </Button>
         </Toolbar>
       </AppBar>
 
