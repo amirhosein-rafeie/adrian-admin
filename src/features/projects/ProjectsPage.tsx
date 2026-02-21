@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button, MenuItem, Stack, TextField } from '@mui/material';
-import { GridColDef } from '@mui/x-data-grid';
+import { GridColDef, GridPaginationModel } from '@mui/x-data-grid';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -12,7 +12,11 @@ import { PageHeader } from '@/components/PageHeader';
 import { StatusChip } from '@/components/StatusChip';
 import { useSnackbar } from '@/hooks/useSnackbar';
 import { queryClient } from '@/services/queryClient';
-import type { get200AdminProjectsResponseJson, postAdminProjectsRequestBodyJson } from '@/share/utils/api/__generated__/types';
+import type {
+  get200AdminProjectsResponseJson,
+  getAdminProjectsQueryParams,
+  postAdminProjectsRequestBodyJson
+} from '@/share/utils/api/__generated__/types';
 import { PROJECTS_LIST } from '@/share/constants';
 import { clientRequest } from '@/share/utils/api/clientRequest';
 
@@ -45,8 +49,9 @@ type ProjectRow = {
 
 export const ProjectsPage = () => {
   const [search, setSearch] = useState('');
-  const [status, setStatus] = useState('all');
+  const [status, setStatus] = useState<'all' | 'processing' | 'finished'>('all');
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({ page: 0, pageSize: 10 });
   const { notify } = useSnackbar();
 
   const form = useForm<FormValues>({
@@ -67,9 +72,19 @@ export const ProjectsPage = () => {
     }
   });
 
+  const query = useMemo<getAdminProjectsQueryParams>(
+    () => ({
+      search: search || undefined,
+      status: status === 'all' ? undefined : status,
+      limit: paginationModel.pageSize,
+      offset: paginationModel.page * paginationModel.pageSize
+    }),
+    [search, status, paginationModel]
+  );
+
   const { data, isPending, isError } = useQuery({
-    queryKey: [PROJECTS_LIST],
-    queryFn: () => clientRequest.GET('/admin/projects')
+    queryKey: [PROJECTS_LIST, query],
+    queryFn: () => clientRequest.GET('/admin/projects', { params: { query } })
   });
 
   const createMutation = useMutation({
@@ -86,24 +101,19 @@ export const ProjectsPage = () => {
     }
   });
 
-  const mappedRows: ProjectRow[] = useMemo(
-    () =>
-      ((data?.data as get200AdminProjectsResponseJson | undefined)?.projects ?? []).map(({ project }) => ({
-        id: project.id,
-        name: project.name,
-        description: project.description ?? '-',
-        status: project.status,
-        created_at: project.created_at?.slice(0, 10) ?? '-',
-        token_name: project.token_name ?? '-',
-        price: project.price ?? '-'
-      })),
-    [data]
-  );
+  const responseData = data?.data as get200AdminProjectsResponseJson | undefined;
+  const mappedRows: ProjectRow[] =
+    (responseData?.projects ?? []).map(({ project }) => ({
+      id: project.id,
+      name: project.name,
+      description: project.description ?? '-',
+      status: project.status,
+      created_at: project.created_at ?? '-',
+      token_name: project.token_name ?? '-',
+      price: project.price ?? '-'
+    }));
 
-  const filtered = useMemo(
-    () => mappedRows.filter((row) => row.name.toLowerCase().includes(search.toLowerCase()) && (status === 'all' || row.status === status)),
-    [mappedRows, search, status]
-  );
+  const total = responseData?.meta?.total ?? 0;
 
   const columns: GridColDef<ProjectRow>[] = [
     { field: 'id', headerName: 'شناسه', width: 80 },
@@ -119,18 +129,22 @@ export const ProjectsPage = () => {
     <>
       <PageHeader
         title="پروژه‌ها"
-        subtitle="دریافت لیست و ایجاد پروژه از طریق API"
+        subtitle="دریافت لیست، جستجو و صفحه‌بندی سمت سرور"
         action={<Button variant="contained" onClick={() => { setIsCreateOpen(true); form.reset(); }}>ایجاد پروژه</Button>}
       />
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} mb={2}>
-        <TextField label="جستجو" value={search} onChange={(e) => setSearch(e.target.value)} />
-        <TextField select label="وضعیت" value={status} onChange={(e) => setStatus(e.target.value)} sx={{ width: 200 }}>
+        <TextField label="جستجو" value={search} onChange={(e) => { setSearch(e.target.value); setPaginationModel((p) => ({ ...p, page: 0 })); }} />
+        <TextField select label="وضعیت" value={status} onChange={(e) => { setStatus(e.target.value as typeof status); setPaginationModel((p) => ({ ...p, page: 0 })); }} sx={{ width: 200 }}>
           <MenuItem value="all">همه</MenuItem>
           <MenuItem value="processing">در حال پردازش</MenuItem>
           <MenuItem value="finished">تکمیل‌شده</MenuItem>
         </TextField>
       </Stack>
-      {isError || (filtered.length === 0 && !isPending) ? <EmptyState /> : <DataTable rows={filtered} columns={columns} loading={isPending} />}
+      {isError ? (
+        <EmptyState />
+      ) : (
+        <DataTable rows={mappedRows} columns={columns} loading={isPending} paginationMode="server" rowCount={total} paginationModel={paginationModel} onPaginationModelChange={setPaginationModel} />
+      )}
       <FormModal
         open={isCreateOpen}
         title="ایجاد پروژه"
