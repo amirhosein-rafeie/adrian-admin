@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Button, Card, CardContent, MenuItem, Stack, TextField, Typography } from '@mui/material';
+import { Box, Button, Card, CardContent, Chip, Divider, MenuItem, Paper, Stack, TextField, Typography } from '@mui/material';
 import { useMutation } from '@tanstack/react-query';
-import { useState } from 'react';
+import { ReactNode, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
@@ -29,6 +29,61 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 type MediaType = 'img' | 'video' | 'pdf';
+type MediaPreview = { file: File; url: string };
+
+const MediaUploadSection = ({
+  title,
+  helperText,
+  accept,
+  mediaType,
+  files,
+  onChange,
+  onRemove,
+  renderPreview
+}: {
+  title: string;
+  helperText: string;
+  accept: string;
+  mediaType: MediaType;
+  files: MediaPreview[];
+  onChange: (type: MediaType, files: FileList | null) => void;
+  onRemove: (type: MediaType, name: string) => void;
+  renderPreview: (item: MediaPreview) => ReactNode;
+}) => (
+  <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+    <Stack spacing={1.5}>
+      <Stack direction="row" justifyContent="space-between" alignItems="center">
+        <Box>
+          <Typography variant="subtitle1" fontWeight={700}>{title}</Typography>
+          <Typography variant="caption" color="text.secondary">{helperText}</Typography>
+        </Box>
+        <Button variant="outlined" component="label" size="small">
+          انتخاب فایل
+          <input hidden type="file" accept={accept} multiple onChange={(event) => onChange(mediaType, event.currentTarget.files)} />
+        </Button>
+      </Stack>
+
+      {files.length === 0 ? (
+        <Typography variant="body2" color="text.secondary">فایلی انتخاب نشده است.</Typography>
+      ) : (
+        <Stack spacing={1.5}>
+          <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+            {files.map((item) => (
+              <Chip key={item.file.name} label={item.file.name} onDelete={() => onRemove(mediaType, item.file.name)} />
+            ))}
+          </Stack>
+          <Stack direction="row" spacing={2} useFlexGap flexWrap="wrap">
+            {files.map((item) => (
+              <Box key={`${item.file.name}-preview`} sx={{ width: 180 }}>
+                {renderPreview(item)}
+              </Box>
+            ))}
+          </Stack>
+        </Stack>
+      )}
+    </Stack>
+  </Paper>
+);
 
 export const ProjectCreatePage = () => {
   const [mediaFiles, setMediaFiles] = useState<Record<MediaType, File[]>>({ img: [], video: [], pdf: [] });
@@ -53,6 +108,23 @@ export const ProjectCreatePage = () => {
     }
   });
 
+  const imagePreviews = useMemo(
+    () => mediaFiles.img.map((file) => ({ file, url: URL.createObjectURL(file) })),
+    [mediaFiles.img]
+  );
+
+  const videoPreviews = useMemo(
+    () => mediaFiles.video.map((file) => ({ file, url: URL.createObjectURL(file) })),
+    [mediaFiles.video]
+  );
+
+  useEffect(() => {
+    return () => {
+      imagePreviews.forEach((item) => URL.revokeObjectURL(item.url));
+      videoPreviews.forEach((item) => URL.revokeObjectURL(item.url));
+    };
+  }, [imagePreviews, videoPreviews]);
+
   const createMutation = useMutation({
     mutationFn: (values: postAdminProjectsRequestBodyJson) =>
       clientRequest.POST('/admin/projects', {
@@ -72,6 +144,13 @@ export const ProjectCreatePage = () => {
     setMediaFiles((prev) => ({
       ...prev,
       [type]: files ? Array.from(files) : []
+    }));
+  };
+
+  const handleRemoveMedia = (type: MediaType, fileName: string) => {
+    setMediaFiles((prev) => ({
+      ...prev,
+      [type]: prev[type].filter((file) => file.name !== fileName)
     }));
   };
 
@@ -131,20 +210,54 @@ export const ProjectCreatePage = () => {
             <TextField type="date" label="ددلاین" {...form.register('dead_line')} error={!!form.formState.errors.dead_line} helperText={form.formState.errors.dead_line?.message} InputLabelProps={{ shrink: true }} />
             <TextField label="پیمانکار" {...form.register('contractor')} error={!!form.formState.errors.contractor} helperText={form.formState.errors.contractor?.message} />
 
-            <Stack spacing={1}>
-              <Typography variant="subtitle2">تصاویر پروژه</Typography>
-              <TextField type="file" inputProps={{ accept: 'image/*', multiple: true }} onChange={(event) => handleMediaChange('img', (event.target as HTMLInputElement).files)} />
-            </Stack>
+            <Divider textAlign="right">آپلود مدیا</Divider>
 
-            <Stack spacing={1}>
-              <Typography variant="subtitle2">ویدیوهای پروژه</Typography>
-              <TextField type="file" inputProps={{ accept: 'video/*', multiple: true }} onChange={(event) => handleMediaChange('video', (event.target as HTMLInputElement).files)} />
-            </Stack>
+            <MediaUploadSection
+              title="تصاویر پروژه"
+              helperText="می‌توانید چند تصویر انتخاب کنید و پیش‌نمایش را ببینید."
+              accept="image/*"
+              mediaType="img"
+              files={imagePreviews}
+              onChange={handleMediaChange}
+              onRemove={handleRemoveMedia}
+              renderPreview={(item) => (
+                <Box
+                  component="img"
+                  src={item.url}
+                  alt={item.file.name}
+                  sx={{ width: '100%', height: 120, objectFit: 'cover', borderRadius: 1, border: '1px solid', borderColor: 'divider' }}
+                />
+              )}
+            />
 
-            <Stack spacing={1}>
-              <Typography variant="subtitle2">PDFهای پروژه</Typography>
-              <TextField type="file" inputProps={{ accept: 'application/pdf', multiple: true }} onChange={(event) => handleMediaChange('pdf', (event.target as HTMLInputElement).files)} />
-            </Stack>
+            <MediaUploadSection
+              title="ویدیوهای پروژه"
+              helperText="می‌توانید چند ویدیو انتخاب کنید و پیش‌نمایش را ببینید."
+              accept="video/*"
+              mediaType="video"
+              files={videoPreviews}
+              onChange={handleMediaChange}
+              onRemove={handleRemoveMedia}
+              renderPreview={(item) => (
+                <Box
+                  component="video"
+                  controls
+                  src={item.url}
+                  sx={{ width: '100%', height: 120, borderRadius: 1, border: '1px solid', borderColor: 'divider', backgroundColor: 'black' }}
+                />
+              )}
+            />
+
+            <MediaUploadSection
+              title="PDFهای پروژه"
+              helperText="برای PDF فقط نام فایل نمایش داده می‌شود."
+              accept="application/pdf"
+              mediaType="pdf"
+              files={mediaFiles.pdf.map((file) => ({ file, url: '' }))}
+              onChange={handleMediaChange}
+              onRemove={handleRemoveMedia}
+              renderPreview={() => null}
+            />
 
             <Stack direction="row" spacing={1} justifyContent="flex-end">
               <Button variant="outlined" onClick={() => navigate('/projects')}>انصراف</Button>
