@@ -1,63 +1,104 @@
 import { MenuItem, Stack, TextField } from '@mui/material';
-import { GridColDef } from '@mui/x-data-grid';
+import { GridColDef, GridPaginationModel } from '@mui/x-data-grid';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { DataTable } from '@/components/DataTable';
 import { PageHeader } from '@/components/PageHeader';
 import { StatusChip } from '@/components/StatusChip';
 import { useSnackbar } from '@/hooks/useSnackbar';
-import { mockApi } from '@/services/mockApi';
-import { db } from '@/services/mockDb';
 import { queryClient } from '@/services/queryClient';
-import { OrderStatus } from '@/types/models';
 import { ORDERS_LIST } from '@/share/constants';
+import {
+  get200AdminOrdersResponseJson,
+  getAdminOrdersQueryParams,
+  patchAdminOrdersIdStatusRequestBodyJson
+} from '@/share/utils/api/__generated__/types';
+import { clientRequest } from '@/share/utils/api/clientRequest';
+
+type OrderRow = NonNullable<get200AdminOrdersResponseJson['orders']>[number];
 
 export const OrdersPage = () => {
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'verified' | 'failed'>('all');
+  const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({ page: 0, pageSize: 10 });
   const { notify } = useSnackbar();
-  const { data = [], isLoading } = useQuery({ queryKey: [ORDERS_LIST], queryFn: () => mockApi.getAll(db.orders) });
+
+  const query = useMemo<getAdminOrdersQueryParams>(
+    () => ({
+      status: statusFilter === 'all' ? undefined : statusFilter,
+      limit: paginationModel.pageSize,
+      offset: paginationModel.page * paginationModel.pageSize
+    }),
+    [statusFilter, paginationModel]
+  );
+
+  const { data, isLoading } = useQuery({
+    queryKey: [ORDERS_LIST, query],
+    queryFn: () => clientRequest.GET('/admin/orders', { params: { query } })
+  });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, status }: { id: number; status: OrderStatus }) => mockApi.update(db.orders, id, { status }),
+    mutationFn: ({ id, status }: { id: number; status: patchAdminOrdersIdStatusRequestBodyJson['status'] }) =>
+      clientRequest.PATCH('/admin/orders/{id}/status', {
+        params: { path: { id } },
+        body: { status }
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [ORDERS_LIST] });
       notify('وضعیت سفارش به‌روزرسانی شد');
     }
   });
 
-  const filtered = useMemo(() => data.filter((o) => (statusFilter === 'all' ? true : o.status === statusFilter)), [data, statusFilter]);
+  const responseData = data?.data as get200AdminOrdersResponseJson | undefined;
+  const rows = responseData?.orders ?? [];
+  const total = responseData?.meta?.total ?? 0;
 
-  const columns: GridColDef[] = [
-    { field: 'id', headerName: 'شناسه', width: 70 },
-    { field: 'user', headerName: 'کاربر', width: 130 },
-    { field: 'projectId', headerName: 'پروژه', flex: 1, valueGetter: (v) => db.projects.find((p) => p.id === v)?.title ?? '-' },
-    { field: 'quantity', headerName: 'تعداد', width: 80 },
-    { field: 'total_price', headerName: 'جمع کل', width: 100 },
+  const columns: GridColDef<OrderRow>[] = [
+    { field: 'id', headerName: 'شناسه', width: 90 },
+    { field: 'user_id', headerName: 'شناسه کاربر', width: 120 },
+    { field: 'token_id', headerName: 'شناسه توکن', width: 120 },
+    { field: 'token_amount', headerName: 'تعداد توکن', width: 120 },
+    { field: 'amount_paid', headerName: 'مبلغ پرداختی', width: 130 },
     {
       field: 'status',
       headerName: 'وضعیت',
       width: 180,
       renderCell: (p) => (
-        <TextField select size="small" value={p.value} onChange={(e) => updateMutation.mutate({ id: p.row.id, status: e.target.value as OrderStatus })}>
-          <MenuItem value="processing">در حال پردازش</MenuItem>
-          <MenuItem value="completed">تکمیل‌شده</MenuItem>
-          <MenuItem value="rejected">ردشده</MenuItem>
+        <TextField
+          select
+          size="small"
+          value={p.value}
+          onChange={(e) => updateMutation.mutate({ id: p.row.id, status: e.target.value as patchAdminOrdersIdStatusRequestBodyJson['status'] })}
+        >
+          <MenuItem value="pending">در انتظار</MenuItem>
+          <MenuItem value="verified">تایید شده</MenuItem>
+          <MenuItem value="failed">ناموفق</MenuItem>
         </TextField>
       )
     },
-    { field: 'statusChip', headerName: 'نشان', width: 120, renderCell: (p) => <StatusChip status={p.row.status} />, sortable: false },
-    { field: 'created_at', headerName: 'تاریخ ایجاد', width: 120 }
+    { field: 'status_chip', headerName: 'نشان', width: 110, sortable: false, renderCell: (p) => <StatusChip status={p.row.status} /> },
+    { field: 'created_at', headerName: 'تاریخ ایجاد', width: 140 }
   ];
 
   return (
     <>
-      <PageHeader title="سفارش‌ها" subtitle="فیلتر و تغییر سریع وضعیت سفارش‌ها" />
+      <PageHeader title="سفارش‌ها" subtitle="فیلتر، صفحه‌بندی و تغییر وضعیت سفارش‌ها" />
       <Stack mb={2} direction="row" spacing={2}>
-        <TextField select label="فیلتر بر اساس وضعیت" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} sx={{ width: 220 }}>
-          <MenuItem value="all">همه</MenuItem><MenuItem value="processing">در حال پردازش</MenuItem><MenuItem value="completed">تکمیل‌شده</MenuItem><MenuItem value="rejected">ردشده</MenuItem>
+        <TextField select label="فیلتر بر اساس وضعیت" value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value as typeof statusFilter); setPaginationModel((p) => ({ ...p, page: 0 })); }} sx={{ width: 240 }}>
+          <MenuItem value="all">همه</MenuItem>
+          <MenuItem value="pending">در انتظار</MenuItem>
+          <MenuItem value="verified">تایید شده</MenuItem>
+          <MenuItem value="failed">ناموفق</MenuItem>
         </TextField>
       </Stack>
-      <DataTable rows={filtered} columns={columns} loading={isLoading} />
+      <DataTable
+        rows={rows}
+        columns={columns}
+        loading={isLoading}
+        paginationMode="server"
+        rowCount={total}
+        paginationModel={paginationModel}
+        onPaginationModelChange={setPaginationModel}
+      />
     </>
   );
 };
