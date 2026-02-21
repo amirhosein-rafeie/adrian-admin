@@ -15,7 +15,7 @@ import { mockApi } from '@/services/mockApi';
 import { db } from '@/services/mockDb';
 import { queryClient } from '@/services/queryClient';
 import { Token } from '@/types/models';
-import { QUERY_KEYS } from '@/share/constants';
+import { TOKENS_LIST } from '@/share/constants';
 
 const schema = z.object({
   token_name: z.string().min(2, 'حداقل ۲ کاراکتر وارد کنید'),
@@ -33,14 +33,14 @@ export const TokensPage = () => {
   const { notify } = useSnackbar();
   const form = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: { token_name: '', projectId: 1, amount: 1, price_per_token: 1, status: 'active' } });
 
-  const { data = [], isLoading } = useQuery({ queryKey: QUERY_KEYS.tokens, queryFn: () => mockApi.getAll(db.tokens) });
+  const { data = [], isLoading } = useQuery({ queryKey: [TOKENS_LIST], queryFn: () => mockApi.getAll(db.tokens) });
 
   const filtered = useMemo(
     () => data.filter((t) => (projectFilter === 'all' ? true : t.projectId === Number(projectFilter))),
     [data, projectFilter]
   );
 
-  const mutateRefresh = () => queryClient.invalidateQueries({ queryKey: QUERY_KEYS.tokens });
+  const mutateRefresh = () => queryClient.invalidateQueries({ queryKey: [TOKENS_LIST] });
   const createMutation = useMutation({ mutationFn: (v: FormValues) => mockApi.create(db.tokens, { ...v, created_at: new Date().toISOString().slice(0, 10) }), onSuccess: () => { mutateRefresh(); notify('توکن ایجاد شد'); } });
   const updateMutation = useMutation({ mutationFn: (v: FormValues) => mockApi.update(db.tokens, selected!.id, v), onSuccess: () => { mutateRefresh(); notify('توکن ویرایش شد'); } });
   const deleteMutation = useMutation({ mutationFn: (id: number) => mockApi.delete(db.tokens, id), onSuccess: () => { mutateRefresh(); notify('توکن حذف شد'); } });

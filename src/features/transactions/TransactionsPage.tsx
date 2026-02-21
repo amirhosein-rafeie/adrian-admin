@@ -10,10 +10,10 @@ import { mockApi } from '@/services/mockApi';
 import { db } from '@/services/mockDb';
 import { queryClient } from '@/services/queryClient';
 import { Transaction, TransactionStatus } from '@/types/models';
-import { QUERY_KEYS } from '@/share/constants';
+import { TRANSACTIONS_LIST } from '@/share/constants';
 
 export const TransactionsPage = () => {
-  const { data = [], isLoading } = useQuery({ queryKey: QUERY_KEYS.transactions, queryFn: () => mockApi.getAll(db.transactions) });
+  const { data = [], isLoading } = useQuery({ queryKey: [TRANSACTIONS_LIST], queryFn: () => mockApi.getAll(db.transactions) });
   const [drawer, setDrawer] = useState<Transaction | null>(null);
   const { notify } = useSnackbar();
 
@@ -28,7 +28,7 @@ export const TransactionsPage = () => {
   const statusMutation = useMutation({
     mutationFn: ({ id, status }: { id: number; status: TransactionStatus }) => mockApi.update(db.transactions, id, { status }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.transactions });
+      queryClient.invalidateQueries({ queryKey: [TRANSACTIONS_LIST] });
       notify('وضعیت با موفقیت به‌روزرسانی شد');
     }
   });
