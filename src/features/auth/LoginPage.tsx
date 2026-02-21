@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { auth } from '@/services/auth';
+import { clientRequest } from '@/share/utils/api/clientRequest';
 import type { post200AdminLoginResponseJson, postAdminLoginRequestBodyJson } from '@/share/utils/api/__generated__/types';
 
 const schema = z.object({
@@ -15,26 +16,13 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>;
 
 const login = async (body: postAdminLoginRequestBodyJson) => {
-  const response = await fetch('/admin/login', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(body)
+  const { data } = await clientRequest.POST('/admin/login', {
+    body
   });
 
-  if (!response.ok) {
-    try {
-      const error = await response.json();
-      throw new Error(error?.error ?? 'ورود ناموفق بود');
-    } catch {
-      throw new Error('ورود ناموفق بود');
-    }
-  }
+  const payload = data as post200AdminLoginResponseJson | undefined;
 
-  const payload = (await response.json()) as post200AdminLoginResponseJson;
-
-  if (!payload.access_token) {
+  if (!payload?.access_token) {
     throw new Error('توکن دریافت نشد');
   }
 

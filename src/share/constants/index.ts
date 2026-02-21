@@ -1,3 +1,9 @@
-export const TOKEN = "token";
+export const TOKEN = 'access_token';
 
-// Query Key
+export const QUERY_KEYS = {
+  projects: ['projects'] as const,
+  tokens: ['tokens'] as const,
+  transactions: ['transactions'] as const,
+  orders: ['orders'] as const,
+  banks: ['banks'] as const
+};

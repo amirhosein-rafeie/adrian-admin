@@ -14,6 +14,7 @@ import { useSnackbar } from '@/hooks/useSnackbar';
 import { projectsApi } from '@/services/projectsApi';
 import { queryClient } from '@/services/queryClient';
 import type { postAdminProjectsRequestBodyJson } from '@/share/utils/api/__generated__/types';
+import { QUERY_KEYS } from '@/share/constants';
 
 const schema = z.object({
   name: z.string().min(2, 'حداقل ۲ کاراکتر وارد کنید'),
@@ -67,14 +68,14 @@ export const ProjectsPage = () => {
   });
 
   const { data = [], isLoading } = useQuery({
-    queryKey: ['projects'],
+    queryKey: QUERY_KEYS.projects,
     queryFn: projectsApi.getProjects
   });
 
   const createMutation = useMutation({
     mutationFn: (values: postAdminProjectsRequestBodyJson) => projectsApi.createProject(values),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.projects });
       notify('پروژه با موفقیت ایجاد شد');
     },
     onError: (error: Error) => {
