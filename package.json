@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "generate": "node generate.mjs && node generate-types.mjs"
   },
   "dependencies": {
     "@emotion/react": "^11.13.5",
@@ -17,12 +18,14 @@
     "@mui/stylis-plugin-rtl": "^7.3.8",
     "@mui/x-data-grid": "^7.18.0",
     "@tanstack/react-query": "^5.59.16",
+    "openapi-typescript": "^7.13.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.53.1",
     "react-router-dom": "^6.27.0",
     "stylis": "^4.3.6",
     "stylis-plugin-rtl": "^2.1.1",
+    "ts-morph": "^27.0.2",
     "zod": "^3.23.8"
   },
   "devDependencies": {
