@@ -14,6 +14,7 @@ import {
   patchAdminTransactionsIdStatusRequestBodyJson
 } from '@/share/utils/api/__generated__/types';
 import { clientRequest } from '@/share/utils/api/clientRequest';
+import { toJalaliDateTime } from '@/share/utils/date';
 
 type TransactionRow = NonNullable<get200AdminTransactionsResponseJson['transactions']>[number];
 
@@ -77,7 +78,7 @@ export const TransactionsPage = () => {
       )
     },
     { field: 'statusChip', headerName: 'نشان', width: 120, sortable: false, renderCell: (p) => <StatusChip status={p.row.status} /> },
-    { field: 'created_at', headerName: 'تاریخ ایجاد', width: 130 }
+    { field: 'created_at', headerName: 'تاریخ ایجاد', width: 140, valueGetter: (_v, row) => toJalaliDateTime(row.created_at) }
   ];
 
   return (
@@ -102,9 +103,19 @@ export const TransactionsPage = () => {
         onPaginationModelChange={setPaginationModel}
       />
       <Drawer anchor="right" open={!!drawer} onClose={() => setDrawer(null)} ModalProps={{ disableScrollLock: true }}>
-        <Stack p={3} spacing={2} width={320}>
+        <Stack p={3} spacing={2} width={360}>
           <Typography variant="h6">جزئیات تراکنش</Typography>
-          {drawer ? Object.entries(drawer).map(([k, v]) => <Typography key={k}><strong>{k}:</strong> {typeof v === 'object' ? JSON.stringify(v) : String(v)}</Typography>) : null}
+          {drawer ? (
+            <Stack spacing={1.5}>
+              <Typography><strong>شناسه:</strong> {drawer.id ?? '-'}</Typography>
+              <Typography><strong>شناسه کاربر:</strong> {drawer.user_id ?? '-'}</Typography>
+              <Typography><strong>درگاه:</strong> {drawer.provider ?? '-'}</Typography>
+              <Typography><strong>نوع:</strong> {drawer.type ?? '-'}</Typography>
+              <Typography><strong>مبلغ:</strong> {drawer.amount ?? '-'}</Typography>
+              <Typography><strong>وضعیت:</strong> {drawer.status ?? '-'}</Typography>
+              <Typography><strong>تاریخ ایجاد:</strong> {toJalaliDateTime(drawer.created_at)}</Typography>
+            </Stack>
+          ) : null}
         </Stack>
       </Drawer>
     </>

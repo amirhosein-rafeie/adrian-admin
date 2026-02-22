@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Alert, Box, Button, Checkbox, FormControlLabel, FormGroup, MenuItem, Stack, TextField, Typography } from '@mui/material';
+import { Box, Button, Checkbox, FormControlLabel, FormGroup, MenuItem, Stack, TextField, Typography } from '@mui/material';
 import { useMutation } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -50,7 +50,9 @@ export const CreateProjectPage = () => {
   const { notify } = useSnackbar();
   const [latLng, setLatLng] = useState({ lat: 35.6892, lng: 51.389 });
   const [selectedOptions, setSelectedOptions] = useState<NonNullable<postAdminProjectsRequestBodyJson['options']>>([]);
-  const [files, setFiles] = useState<File[]>([]);
+  const [images, setImages] = useState<File[]>([]);
+  const [video, setVideo] = useState<File | null>(null);
+  const [pdf, setPdf] = useState<File | null>(null);
 
   const locationValue = useMemo(() => `${latLng.lat.toFixed(6)} ${latLng.lng.toFixed(6)}`, [latLng]);
 
@@ -87,6 +89,8 @@ export const CreateProjectPage = () => {
       const projectId = project?.id;
       if (!projectId) return;
 
+      const files: File[] = [...images, ...(video ? [video] : []), ...(pdf ? [pdf] : [])];
+
       for (const file of files) {
         await clientRequest.POST('/admin/projects/{id}/media', {
           params: { path: { id: projectId } },
@@ -110,7 +114,7 @@ export const CreateProjectPage = () => {
 
   return (
     <>
-      <PageHeader title="ایجاد پروژه" subtitle="ثبت پروژه جدید با موقعیت نقشه، آپلود فایل و گزینه‌ها" />
+      <PageHeader title="ایجاد پروژه" subtitle="" />
       <Stack spacing={2} component="form" onSubmit={form.handleSubmit(async (values) => createMutation.mutateAsync(values))}>
         <TextField label="نام پروژه" {...form.register('name')} error={!!form.formState.errors.name} helperText={form.formState.errors.name?.message} />
         <TextField label="توضیحات" multiline minRows={2} {...form.register('description')} />
@@ -145,19 +149,12 @@ export const CreateProjectPage = () => {
         <TextField label="پیمانکار" {...form.register('contractor')} />
 
         <Box>
-          <Typography mb={1} fontWeight={600}>امکانات پروژه (Options)</Typography>
+          <Typography mb={1} fontWeight={600}>امکانات پروژه</Typography>
           <FormGroup>
             {OPTION_ITEMS.map((item) => (
               <FormControlLabel
                 key={item.value}
-                control={
-                  <Checkbox
-                    checked={selectedOptions.includes(item.value)}
-                    onChange={(e) => {
-                      setSelectedOptions((prev) => (e.target.checked ? [...prev, item.value] : prev.filter((i) => i !== item.value)));
-                    }}
-                  />
-                }
+                control={<Checkbox checked={selectedOptions.includes(item.value)} onChange={(e) => setSelectedOptions((prev) => (e.target.checked ? [...prev, item.value] : prev.filter((i) => i !== item.value)))} />}
                 label={item.label}
               />
             ))}
@@ -165,23 +162,31 @@ export const CreateProjectPage = () => {
         </Box>
 
         <Box>
-          <Typography mb={1} fontWeight={600}>آپلود عکس/ویدیو/مدرک</Typography>
+          <Typography mb={1} fontWeight={600}>تصاویر پروژه (چند تصویر)</Typography>
           <Button variant="outlined" component="label">
-            انتخاب فایل‌ها
-            <input
-              hidden
-              type="file"
-              multiple
-              accept="image/*,video/*,.pdf,.doc,.docx,.txt,.mp3,.wav"
-              onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
-            />
+            انتخاب تصاویر
+            <input hidden type="file" multiple accept="image/*" onChange={(e) => setImages(Array.from(e.target.files ?? []))} />
           </Button>
-          <Stack mt={1} spacing={0.5}>
-            {files.length === 0 ? <Typography variant="body2" color="text.secondary">فایلی انتخاب نشده است.</Typography> : files.map((file) => <Typography key={file.name} variant="body2">• {file.name}</Typography>)}
-          </Stack>
+          <Stack mt={1} spacing={0.5}>{images.map((file) => <Typography key={file.name} variant="body2">• {file.name}</Typography>)}</Stack>
         </Box>
 
-        <Alert severity="info">تمام تاریخ‌های نمایشی در پنل به شمسی تبدیل شده‌اند. تاریخ‌های ورودی فرم طبق API با فرمت میلادی YYYY-MM-DD ارسال می‌شوند.</Alert>
+        <Box>
+          <Typography mb={1} fontWeight={600}>ویدیو پروژه (یک فایل)</Typography>
+          <Button variant="outlined" component="label">
+            انتخاب ویدیو
+            <input hidden type="file" accept="video/*" onChange={(e) => setVideo(e.target.files?.[0] ?? null)} />
+          </Button>
+          <Typography mt={1} variant="body2" color="text.secondary">{video?.name ?? 'فایلی انتخاب نشده است.'}</Typography>
+        </Box>
+
+        <Box>
+          <Typography mb={1} fontWeight={600}>فایل PDF پروژه (یک فایل)</Typography>
+          <Button variant="outlined" component="label">
+            انتخاب PDF
+            <input hidden type="file" accept="application/pdf" onChange={(e) => setPdf(e.target.files?.[0] ?? null)} />
+          </Button>
+          <Typography mt={1} variant="body2" color="text.secondary">{pdf?.name ?? 'فایلی انتخاب نشده است.'}</Typography>
+        </Box>
 
         <Stack direction="row" spacing={1.5}>
           <Button type="submit" variant="contained" disabled={createMutation.isPending}>ساخت پروژه</Button>
