@@ -63,7 +63,15 @@ export const ProjectsPage = () => {
     { field: 'price', headerName: 'قیمت', width: 140 },
     { field: 'description', headerName: 'توضیحات', flex: 1.2 },
     { field: 'status', headerName: 'وضعیت', width: 140, renderCell: (p) => <StatusChip status={p.value} /> },
-    { field: 'created_at', headerName: 'تاریخ ایجاد', width: 130 }
+    { field: 'created_at', headerName: 'تاریخ ایجاد', width: 130 },
+
+    {
+      field: 'actions',
+      headerName: 'عملیات',
+      width: 120,
+      sortable: false,
+      renderCell: (p) => <Button size="small" onClick={() => navigate(`/projects/${p.row.id}/edit`)}>ویرایش</Button>
+    },
   ];
 
   return (
