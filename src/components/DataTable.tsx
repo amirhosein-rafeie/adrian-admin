@@ -1,5 +1,5 @@
 import { DataGrid, DataGridProps, GridColDef } from '@mui/x-data-grid';
-import { Box, Skeleton } from '@mui/material';
+import { Box, Skeleton, useMediaQuery, useTheme } from '@mui/material';
 import { useMemo } from 'react';
 
 const faLocaleText = {
@@ -53,6 +53,8 @@ const faLocaleText = {
 };
 
 export const DataTable = (props: DataGridProps) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const columns = useMemo(
     () =>
       (props.columns ?? []).map((column) => {
@@ -87,7 +89,15 @@ export const DataTable = (props: DataGridProps) => {
             pageSizeOptions={[5, 10, 20]}
             localeText={faLocaleText}
             initialState={{ pagination: { paginationModel: { pageSize: 10, page: 0 } } }}
-            sx={{ minWidth: { xs: 760, md: 0 } }}
+            sx={{
+              minWidth: isMobile ? 560 : 0,
+              '& .MuiDataGrid-cell, & .MuiDataGrid-columnHeaderTitle': {
+                fontSize: isMobile ? 12 : 14
+              },
+              '& .MuiDataGrid-cell': {
+                py: isMobile ? 0.5 : 1
+              }
+            }}
             {...props}
             columns={columns}
           />
