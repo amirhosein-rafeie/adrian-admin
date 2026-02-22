@@ -11,6 +11,7 @@ import { queryClient } from '@/services/queryClient';
 import { VERIFICATIONS_LIST } from '@/share/constants';
 import type { get200AdminVerificationsResponseJson, getAdminVerificationsQueryParams } from '@/share/utils/api/__generated__/types';
 import { clientRequest } from '@/share/utils/api/clientRequest';
+import { toJalaliDateTime } from '@/share/utils/date';
 
 type VerificationRow = NonNullable<get200AdminVerificationsResponseJson['verifications']>[number];
 
@@ -98,7 +99,7 @@ export const VerificationsPage = () => {
         <DialogContent>
           <Stack spacing={1.5} mt={1}>
             {selected ? Object.entries(selected).map(([key, value]) => (
-              <Typography key={key}><strong>{key}:</strong> {value ? String(value) : '-'}</Typography>
+              <Typography key={key}><strong>{key}:</strong> {key.includes('at') ? toJalaliDateTime(String(value ?? '')) : (value ? String(value) : '-')}</Typography>
             )) : null}
           </Stack>
         </DialogContent>

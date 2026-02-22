@@ -12,6 +12,7 @@ import { queryClient } from '@/services/queryClient';
 import { USERS_LIST } from '@/share/constants';
 import type { get200AdminUsersResponseJson, getAdminUsersQueryParams, putAdminUsersIdRequestBodyJson } from '@/share/utils/api/__generated__/types';
 import { clientRequest } from '@/share/utils/api/clientRequest';
+import { toJalaliDateTime } from '@/share/utils/date';
 
 type UserRow = NonNullable<get200AdminUsersResponseJson['users']>[number];
 
@@ -102,9 +103,9 @@ export const UsersPage = () => {
         { label: 'نام', value: selectedUser.first_name || '-' },
         { label: 'نام خانوادگی', value: selectedUser.last_name || '-' },
         { label: 'کد ملی', value: selectedUser.national_code || '-' },
-        { label: 'تاریخ تولد', value: selectedUser.birth_date || '-' },
-        { label: 'تاریخ ایجاد', value: selectedUser.created_at || '-' },
-        { label: 'آخرین بروزرسانی', value: selectedUser.updated_at || '-' }
+        { label: 'تاریخ تولد', value: toJalaliDateTime(selectedUser.birth_date) },
+        { label: 'تاریخ ایجاد', value: toJalaliDateTime(selectedUser.created_at) },
+        { label: 'آخرین بروزرسانی', value: toJalaliDateTime(selectedUser.updated_at) }
       ]
     : [];
 
