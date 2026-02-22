@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { LeafletMapPicker } from '@/components/LeafletMapPicker';
 import { PageHeader } from '@/components/PageHeader';
+import { SelectedMediaPreview } from '@/components/SelectedMediaPreview';
 import { useSnackbar } from '@/hooks/useSnackbar';
 import { queryClient } from '@/services/queryClient';
 import { PROJECTS_LIST } from '@/share/constants';
@@ -160,6 +161,7 @@ export const CreateProjectPage = () => {
               <Typography mb={1} fontWeight={600}>PDF پروژه (یک فایل)</Typography>
               <Button variant="outlined" component="label">انتخاب PDF<input hidden type="file" accept="application/pdf" onChange={(e) => setPdf(e.target.files?.[0] ?? null)} /></Button>
             </Box>
+            <SelectedMediaPreview images={images} video={video} pdf={pdf} />
             <Button variant="contained" onClick={() => uploadMutation.mutate()} disabled={uploadMutation.isPending}>۲) آپلود فایل‌ها</Button>
           </Stack>
         ) : null}
