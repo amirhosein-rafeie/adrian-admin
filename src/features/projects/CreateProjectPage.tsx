@@ -1,5 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Alert, Box, Button, Checkbox, FormControlLabel, FormGroup, MenuItem, Stack, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, Checkbox, FormControlLabel, FormGroup, IconButton, MenuItem, Stack, TextField, Typography } from '@mui/material';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { useMutation } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -10,6 +11,7 @@ import { PageHeader } from '@/components/PageHeader';
 import { SelectedMediaPreview } from '@/components/SelectedMediaPreview';
 import { useSnackbar } from '@/hooks/useSnackbar';
 import { queryClient } from '@/services/queryClient';
+import { auth } from '@/services/auth';
 import { PROJECTS_LIST } from '@/share/constants';
 import type { postAdminProjectsIdMediaRequestBodyFormData, postAdminProjectsRequestBodyJson } from '@/share/utils/api/__generated__/types';
 import { clientRequest } from '@/share/utils/api/clientRequest';
@@ -44,6 +46,30 @@ const mediaTypeFromFile = (file: File): postAdminProjectsIdMediaRequestBodyFormD
   if (file.type.startsWith('video/')) return 'video';
   if (file.type === 'application/pdf') return 'pdf';
   return 'text';
+};
+
+const uploadProjectMedia = async (projectId: number, file: File, mediaType: postAdminProjectsIdMediaRequestBodyFormData['media_type']) => {
+  const baseUrl = import.meta.env.VITE_API_BASE_URL ?? '';
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('name', file.name);
+  formData.append('media_type', mediaType);
+
+  const token = auth.getToken();
+  const res = await fetch(`${baseUrl}/admin/projects/${projectId}/media`, {
+    method: 'POST',
+    headers: token ? { authorization: `Bearer ${token}` } : undefined,
+    body: formData
+  });
+
+  if (!res.ok) {
+    let message = 'خطا در آپلود فایل';
+    try {
+      const body = await res.json();
+      message = body?.error || body?.message || message;
+    } catch {}
+    throw new Error(message);
+  }
 };
 
 export const CreateProjectPage = () => {
@@ -89,13 +115,9 @@ export const CreateProjectPage = () => {
   const uploadMutation = useMutation({
     mutationFn: async () => {
       if (!projectId) return;
-      const files: File[] = [...images, ...(video ? [video] : []), ...(pdf ? [pdf] : [])];
-      for (const file of files) {
-        await clientRequest.POST('/admin/projects/{id}/media', {
-          params: { path: { id: projectId } },
-          body: { file: file as unknown as string, name: file.name, media_type: mediaTypeFromFile(file) }
-        });
-      }
+      for (const file of images) await uploadProjectMedia(projectId, file, 'img');
+      if (video) await uploadProjectMedia(projectId, video, 'video');
+      if (pdf) await uploadProjectMedia(projectId, pdf, 'pdf');
     },
     onSuccess: () => {
       notify('فایل‌ها آپلود شدند');
@@ -147,24 +169,25 @@ export const CreateProjectPage = () => {
 
         {!projectId ? <Button type="submit" variant="contained" disabled={createMutation.isPending}>۱) ساخت پروژه</Button> : <Alert severity="success">پروژه با شناسه {projectId} ساخته شد</Alert>}
 
-        {projectId ? (
-          <Stack spacing={2}>
-            <Box>
-              <Typography mb={1} fontWeight={600}>تصاویر پروژه (چند تصویر)</Typography>
-              <Button variant="outlined" component="label">انتخاب تصاویر<input hidden type="file" multiple accept="image/*" onChange={(e) => setImages(Array.from(e.target.files ?? []))} /></Button>
-            </Box>
-            <Box>
-              <Typography mb={1} fontWeight={600}>ویدیو پروژه (یک فایل)</Typography>
-              <Button variant="outlined" component="label">انتخاب ویدیو<input hidden type="file" accept="video/*" onChange={(e) => setVideo(e.target.files?.[0] ?? null)} /></Button>
-            </Box>
-            <Box>
-              <Typography mb={1} fontWeight={600}>PDF پروژه (یک فایل)</Typography>
-              <Button variant="outlined" component="label">انتخاب PDF<input hidden type="file" accept="application/pdf" onChange={(e) => setPdf(e.target.files?.[0] ?? null)} /></Button>
-            </Box>
-            <SelectedMediaPreview images={images} video={video} pdf={pdf} />
-            <Button variant="contained" onClick={() => uploadMutation.mutate()} disabled={uploadMutation.isPending}>۲) آپلود فایل‌ها</Button>
-          </Stack>
-        ) : null}
+        <Stack spacing={2}>
+          <Box>
+            <Typography mb={1} fontWeight={600}>تصاویر پروژه (چند تصویر)</Typography>
+            <Button variant="outlined" component="label">انتخاب تصاویر<input hidden type="file" multiple accept="image/*" onChange={(e) => setImages(Array.from(e.target.files ?? []))} /></Button>
+            <Stack mt={1} spacing={0.5}>{images.map((f, i) => <Stack key={`${f.name}-${i}`} direction="row" justifyContent="space-between"><Typography variant="body2">{f.name}</Typography><IconButton size="small" onClick={() => setImages((prev) => prev.filter((_, idx) => idx !== i))}><DeleteOutlineIcon fontSize="small" /></IconButton></Stack>)}</Stack>
+          </Box>
+          <Box>
+            <Typography mb={1} fontWeight={600}>ویدیو پروژه (یک فایل)</Typography>
+            <Button variant="outlined" component="label">انتخاب ویدیو<input hidden type="file" accept="video/*" onChange={(e) => setVideo(e.target.files?.[0] ?? null)} /></Button>
+            {video ? <Stack direction="row" justifyContent="space-between" mt={1}><Typography variant="body2">{video.name}</Typography><IconButton size="small" onClick={() => setVideo(null)}><DeleteOutlineIcon fontSize="small" /></IconButton></Stack> : null}
+          </Box>
+          <Box>
+            <Typography mb={1} fontWeight={600}>PDF پروژه (یک فایل)</Typography>
+            <Button variant="outlined" component="label">انتخاب PDF<input hidden type="file" accept="application/pdf" onChange={(e) => setPdf(e.target.files?.[0] ?? null)} /></Button>
+            {pdf ? <Stack direction="row" justifyContent="space-between" mt={1}><Typography variant="body2">{pdf.name}</Typography><IconButton size="small" onClick={() => setPdf(null)}><DeleteOutlineIcon fontSize="small" /></IconButton></Stack> : null}
+          </Box>
+          <SelectedMediaPreview images={images} video={video} pdf={pdf} />
+          <Button variant="contained" onClick={() => uploadMutation.mutate()} disabled={!projectId || uploadMutation.isPending}>۲) آپلود فایل‌ها</Button>
+        </Stack>
       </Stack>
     </>
   );

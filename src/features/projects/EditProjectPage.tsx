@@ -1,5 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Box, Button, Checkbox, FormControlLabel, FormGroup, MenuItem, Stack, TextField, Typography } from '@mui/material';
+import { Box, Button, Checkbox, FormControlLabel, FormGroup, IconButton, MenuItem, Stack, TextField, Typography } from '@mui/material';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -10,6 +11,7 @@ import { PageHeader } from '@/components/PageHeader';
 import { SelectedMediaPreview } from '@/components/SelectedMediaPreview';
 import { useSnackbar } from '@/hooks/useSnackbar';
 import { queryClient } from '@/services/queryClient';
+import { auth } from '@/services/auth';
 import { PROJECTS_LIST } from '@/share/constants';
 import type { postAdminProjectsIdMediaRequestBodyFormData, putAdminProjectsIdRequestBodyJson } from '@/share/utils/api/__generated__/types';
 import { clientRequest } from '@/share/utils/api/clientRequest';
@@ -28,11 +30,15 @@ const schema = z.object({
 });
 type FormValues = z.infer<typeof schema>;
 
-const mediaTypeFromFile = (file: File): postAdminProjectsIdMediaRequestBodyFormData['media_type'] => {
-  if (file.type.startsWith('image/')) return 'img';
-  if (file.type.startsWith('video/')) return 'video';
-  if (file.type === 'application/pdf') return 'pdf';
-  return 'text';
+const uploadProjectMedia = async (projectId: number, file: File, mediaType: postAdminProjectsIdMediaRequestBodyFormData['media_type']) => {
+  const baseUrl = import.meta.env.VITE_API_BASE_URL ?? '';
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('name', file.name);
+  formData.append('media_type', mediaType);
+  const token = auth.getToken();
+  const res = await fetch(`${baseUrl}/admin/projects/${projectId}/media`, { method: 'POST', headers: token ? { authorization: `Bearer ${token}` } : undefined, body: formData });
+  if (!res.ok) throw new Error('خطا در آپلود فایل');
 };
 
 export const EditProjectPage = () => {
@@ -49,11 +55,7 @@ export const EditProjectPage = () => {
   const form = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: { status: 'processing', token_count: 1 } });
   const locationValue = useMemo(() => `${latLng.lat.toFixed(6)} ${latLng.lng.toFixed(6)}`, [latLng]);
 
-  const { data } = useQuery({
-    queryKey: [PROJECTS_LIST, 'edit', projectId],
-    enabled: Number.isFinite(projectId),
-    queryFn: () => clientRequest.GET('/admin/projects/{id}', { params: { path: { id: projectId } } })
-  });
+  const { data } = useQuery({ queryKey: [PROJECTS_LIST, 'edit', projectId], enabled: Number.isFinite(projectId), queryFn: () => clientRequest.GET('/admin/projects/{id}', { params: { path: { id: projectId } } }) });
 
   useEffect(() => {
     const d: any = data?.data;
@@ -65,17 +67,13 @@ export const EditProjectPage = () => {
     setSelectedOptions((p.options ?? []) as NonNullable<putAdminProjectsIdRequestBodyJson['options']>);
   }, [data]);
 
-  const updateMutation = useMutation({
-    mutationFn: (values: FormValues) => clientRequest.PUT('/admin/projects/{id}', { params: { path: { id: projectId } }, body: { ...values, location: locationValue, options: selectedOptions } }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: [PROJECTS_LIST] }); notify('پروژه ویرایش شد'); }
-  });
+  const updateMutation = useMutation({ mutationFn: (values: FormValues) => clientRequest.PUT('/admin/projects/{id}', { params: { path: { id: projectId } }, body: { ...values, location: locationValue, options: selectedOptions } }), onSuccess: () => { queryClient.invalidateQueries({ queryKey: [PROJECTS_LIST] }); notify('پروژه ویرایش شد'); } });
 
   const uploadMutation = useMutation({
     mutationFn: async () => {
-      const files: File[] = [...images, ...(video ? [video] : []), ...(pdf ? [pdf] : [])];
-      for (const file of files) {
-        await clientRequest.POST('/admin/projects/{id}/media', { params: { path: { id: projectId } }, body: { file: file as unknown as string, name: file.name, media_type: mediaTypeFromFile(file) } });
-      }
+      for (const file of images) await uploadProjectMedia(projectId, file, 'img');
+      if (video) await uploadProjectMedia(projectId, video, 'video');
+      if (pdf) await uploadProjectMedia(projectId, pdf, 'pdf');
     },
     onSuccess: () => notify('فایل‌ها اضافه شدند')
   });
@@ -98,11 +96,11 @@ export const EditProjectPage = () => {
         <Box><Typography mb={1} fontWeight={600}>امکانات پروژه</Typography><FormGroup>{OPTION_ITEMS.map((item) => <FormControlLabel key={item.value} control={<Checkbox checked={selectedOptions.includes(item.value)} onChange={(e) => setSelectedOptions((prev) => (e.target.checked ? [...prev, item.value] : prev.filter((i) => i !== item.value)))} />} label={item.label} />)}</FormGroup></Box>
         <Stack direction="row" spacing={1}><Button type="submit" variant="contained" disabled={updateMutation.isPending}>ذخیره</Button><Button variant="outlined" onClick={() => navigate('/projects')}>بازگشت</Button></Stack>
 
-        <Box><Typography mb={1} fontWeight={600}>تصاویر پروژه (چند تصویر)</Typography><Button variant="outlined" component="label">انتخاب تصاویر<input hidden type="file" multiple accept="image/*" onChange={(e) => setImages(Array.from(e.target.files ?? []))} /></Button></Box>
-        <Box><Typography mb={1} fontWeight={600}>ویدیو پروژه (یک فایل)</Typography><Button variant="outlined" component="label">انتخاب ویدیو<input hidden type="file" accept="video/*" onChange={(e) => setVideo(e.target.files?.[0] ?? null)} /></Button></Box>
-        <Box><Typography mb={1} fontWeight={600}>PDF پروژه (یک فایل)</Typography><Button variant="outlined" component="label">انتخاب PDF<input hidden type="file" accept="application/pdf" onChange={(e) => setPdf(e.target.files?.[0] ?? null)} /></Button></Box>
+        <Box><Typography mb={1} fontWeight={600}>تصاویر پروژه (چند تصویر)</Typography><Button variant="outlined" component="label">انتخاب تصاویر<input hidden type="file" multiple accept="image/*" onChange={(e) => setImages(Array.from(e.target.files ?? []))} /></Button><Stack mt={1} spacing={0.5}>{images.map((f, i) => <Stack key={`${f.name}-${i}`} direction="row" justifyContent="space-between"><Typography variant="body2">{f.name}</Typography><IconButton size="small" onClick={() => setImages((prev) => prev.filter((_, idx) => idx !== i))}><DeleteOutlineIcon fontSize="small" /></IconButton></Stack>)}</Stack></Box>
+        <Box><Typography mb={1} fontWeight={600}>ویدیو پروژه (یک فایل)</Typography><Button variant="outlined" component="label">انتخاب ویدیو<input hidden type="file" accept="video/*" onChange={(e) => setVideo(e.target.files?.[0] ?? null)} /></Button>{video ? <Stack direction="row" justifyContent="space-between" mt={1}><Typography variant="body2">{video.name}</Typography><IconButton size="small" onClick={() => setVideo(null)}><DeleteOutlineIcon fontSize="small" /></IconButton></Stack> : null}</Box>
+        <Box><Typography mb={1} fontWeight={600}>PDF پروژه (یک فایل)</Typography><Button variant="outlined" component="label">انتخاب PDF<input hidden type="file" accept="application/pdf" onChange={(e) => setPdf(e.target.files?.[0] ?? null)} /></Button>{pdf ? <Stack direction="row" justifyContent="space-between" mt={1}><Typography variant="body2">{pdf.name}</Typography><IconButton size="small" onClick={() => setPdf(null)}><DeleteOutlineIcon fontSize="small" /></IconButton></Stack> : null}</Box>
         <SelectedMediaPreview images={images} video={video} pdf={pdf} />
-            <Button variant="contained" onClick={() => uploadMutation.mutate()} disabled={uploadMutation.isPending}>افزودن فایل‌ها</Button>
+        <Button variant="contained" onClick={() => uploadMutation.mutate()} disabled={uploadMutation.isPending}>افزودن فایل‌ها</Button>
       </Stack>
     </>
   );
