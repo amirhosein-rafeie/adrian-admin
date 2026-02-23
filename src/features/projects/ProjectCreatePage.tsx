@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Box, Button, Card, CardContent, Chip, Divider, MenuItem, Paper, Stack, Step, StepLabel, Stepper, TextField, Typography } from '@mui/material';
 import { useMutation } from '@tanstack/react-query';
-import { ReactNode, useEffect, useMemo, useState } from 'react';
+import { ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
@@ -31,7 +31,94 @@ type FormValues = z.infer<typeof schema>;
 type MediaType = 'img' | 'video' | 'pdf';
 type MediaPreview = { file: File; url: string };
 
-const steps = ['اطلاعات پروژه + تصاویر', 'ویدیو و PDF + ثبت نهایی'];
+const steps = ['ایجاد پروژه + انتخاب لوکیشن و تصاویر', 'افزودن مدیا به پروژه'];
+
+const parseLocation = (value: string): { lat: number; lng: number } | null => {
+  const [latRaw, lngRaw] = value.trim().split(/\s+/);
+  const lat = Number(latRaw);
+  const lng = Number(lngRaw);
+  if (Number.isFinite(lat) && Number.isFinite(lng)) return { lat, lng };
+  return null;
+};
+
+const MapLocationPicker = ({ value, onChange }: { value: string; onChange: (value: string) => void }) => {
+  const mapElementRef = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<any>(null);
+  const markerRef = useRef<any>(null);
+
+  const fallback = parseLocation(value) ?? { lat: 35.6892, lng: 51.3890 };
+
+  useEffect(() => {
+    let mounted = true;
+
+    const initMap = async () => {
+      if (!mapElementRef.current) return;
+
+      if (!(window as any).L) {
+        const css = document.createElement('link');
+        css.rel = 'stylesheet';
+        css.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+        document.head.appendChild(css);
+
+        await new Promise<void>((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+          script.onload = () => resolve();
+          script.onerror = () => reject(new Error('لود نقشه ناموفق بود'));
+          document.body.appendChild(script);
+        });
+      }
+
+      if (!mounted || !(window as any).L) return;
+
+      const L = (window as any).L;
+
+      mapRef.current = L.map(mapElementRef.current).setView([fallback.lat, fallback.lng], 13);
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(mapRef.current);
+
+      markerRef.current = L.marker([fallback.lat, fallback.lng]).addTo(mapRef.current);
+
+      mapRef.current.on('click', (event: any) => {
+        const { lat, lng } = event.latlng;
+        markerRef.current.setLatLng([lat, lng]);
+        onChange(`${lat.toFixed(6)} ${lng.toFixed(6)}`);
+      });
+    };
+
+    void initMap();
+
+    return () => {
+      mounted = false;
+      if (mapRef.current) {
+        mapRef.current.remove();
+      }
+      mapRef.current = null;
+      markerRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    const parsed = parseLocation(value);
+    if (!parsed || !mapRef.current || !markerRef.current) return;
+
+    markerRef.current.setLatLng([parsed.lat, parsed.lng]);
+    mapRef.current.setView([parsed.lat, parsed.lng], mapRef.current.getZoom());
+  }, [value]);
+
+  return (
+    <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+      <Stack spacing={1.5}>
+        <Typography variant="subtitle1" fontWeight={700}>انتخاب لوکیشن روی نقشه</Typography>
+        <Typography variant="caption" color="text.secondary">روی نقشه کلیک کنید تا مختصات ثبت شود.</Typography>
+        <Box ref={mapElementRef} sx={{ width: '100%', height: 320, borderRadius: 1, overflow: 'hidden' }} />
+      </Stack>
+    </Paper>
+  );
+};
 
 const MediaUploadSection = ({
   title,
@@ -89,6 +176,7 @@ const MediaUploadSection = ({
 
 export const ProjectCreatePage = () => {
   const [activeStep, setActiveStep] = useState(0);
+  const [createdProjectId, setCreatedProjectId] = useState<number | null>(null);
   const [mediaFiles, setMediaFiles] = useState<Record<MediaType, File[]>>({ img: [], video: [], pdf: [] });
   const { notify } = useSnackbar();
   const navigate = useNavigate();
@@ -100,7 +188,7 @@ export const ProjectCreatePage = () => {
       description: '',
       status: 'processing',
       address: '',
-      location: '',
+      location: '35.689200 51.389000',
       price: '',
       price_currency: 'IRR',
       token_count: 1,
@@ -110,6 +198,8 @@ export const ProjectCreatePage = () => {
       contractor: ''
     }
   });
+
+  const locationValue = form.watch('location');
 
   const imagePreviews = useMemo(() => mediaFiles.img.map((file) => ({ file, url: URL.createObjectURL(file) })), [mediaFiles.img]);
   const videoPreviews = useMemo(() => mediaFiles.video.map((file) => ({ file, url: URL.createObjectURL(file) })), [mediaFiles.video]);
@@ -150,30 +240,31 @@ export const ProjectCreatePage = () => {
     }));
   };
 
-  const nextStep = async () => {
-    const valid = await form.trigger();
-    if (!valid) {
-      notify('ابتدا خطاهای فرم را برطرف کنید', 'error');
-      return;
-    }
-    setActiveStep(1);
-  };
-
-  const previousStep = () => setActiveStep(0);
-
-  const handleSubmitFinal = form.handleSubmit(async (values) => {
+  const handleCreateProject = form.handleSubmit(async (values) => {
     try {
       const createResult = (await createMutation.mutateAsync(values)) as { data?: { id?: number } };
       const projectId = createResult.data?.id;
 
       if (!projectId) throw new Error('شناسه پروژه از سرور دریافت نشد');
 
+      setCreatedProjectId(projectId);
+      setActiveStep(1);
+      notify('پروژه ایجاد شد، حالا مدیا را اضافه کنید');
+    } catch (error) {
+      notify((error as Error).message, 'error');
+    }
+  });
+
+  const handleUploadMedia = async () => {
+    try {
+      if (!createdProjectId) throw new Error('ابتدا پروژه را ایجاد کنید');
+
       const uploadOrder: MediaType[] = ['img', 'video', 'pdf'];
 
       for (const mediaType of uploadOrder) {
         for (const file of mediaFiles[mediaType]) {
           await uploadMediaMutation.mutateAsync({
-            projectId,
+            projectId: createdProjectId,
             body: {
               file: file as unknown as string,
               media_type: mediaType,
@@ -184,19 +275,19 @@ export const ProjectCreatePage = () => {
       }
 
       await queryClient.invalidateQueries({ queryKey: [PROJECTS_LIST] });
-      notify('پروژه با موفقیت ایجاد شد');
+      notify('مدیاها با موفقیت به پروژه اضافه شدند');
       navigate('/projects');
     } catch (error) {
       notify((error as Error).message, 'error');
     }
-  });
+  };
 
   return (
     <>
-      <PageHeader title="ایجاد پروژه" subtitle="فرایند ساخت پروژه در دو مرحله" />
+      <PageHeader title="ایجاد پروژه" subtitle="اول پروژه ساخته می‌شود، سپس مدیاها به آن اضافه می‌شوند" />
       <Card>
         <CardContent>
-          <Stack spacing={3} component="form" onSubmit={handleSubmitFinal}>
+          <Stack spacing={3}>
             <Stepper activeStep={activeStep} alternativeLabel>
               {steps.map((step) => (
                 <Step key={step}>
@@ -206,7 +297,7 @@ export const ProjectCreatePage = () => {
             </Stepper>
 
             {activeStep === 0 && (
-              <>
+              <Stack spacing={2} component="form" onSubmit={handleCreateProject}>
                 <TextField label="نام پروژه" {...form.register('name')} error={!!form.formState.errors.name} helperText={form.formState.errors.name?.message} />
                 <TextField label="توضیحات" {...form.register('description')} error={!!form.formState.errors.description} helperText={form.formState.errors.description?.message} multiline minRows={2} />
                 <TextField select label="وضعیت" {...form.register('status')}>
@@ -214,7 +305,6 @@ export const ProjectCreatePage = () => {
                   <MenuItem value="finished">تکمیل‌شده</MenuItem>
                 </TextField>
                 <TextField label="آدرس" {...form.register('address')} error={!!form.formState.errors.address} helperText={form.formState.errors.address?.message} />
-                <TextField label="مختصات (lat lng)" {...form.register('location')} error={!!form.formState.errors.location} helperText={form.formState.errors.location?.message} />
                 <TextField label="قیمت" {...form.register('price')} error={!!form.formState.errors.price} helperText={form.formState.errors.price?.message} />
                 <TextField label="واحد قیمت" {...form.register('price_currency')} error={!!form.formState.errors.price_currency} helperText={form.formState.errors.price_currency?.message} />
                 <TextField type="number" label="تعداد توکن" {...form.register('token_count')} error={!!form.formState.errors.token_count} helperText={form.formState.errors.token_count?.message} />
@@ -222,11 +312,23 @@ export const ProjectCreatePage = () => {
                 <TextField type="date" label="تاریخ شروع" {...form.register('start_time')} error={!!form.formState.errors.start_time} helperText={form.formState.errors.start_time?.message} InputLabelProps={{ shrink: true }} />
                 <TextField type="date" label="ددلاین" {...form.register('dead_line')} error={!!form.formState.errors.dead_line} helperText={form.formState.errors.dead_line?.message} InputLabelProps={{ shrink: true }} />
                 <TextField label="پیمانکار" {...form.register('contractor')} error={!!form.formState.errors.contractor} helperText={form.formState.errors.contractor?.message} />
+                <TextField
+                  label="مختصات (lat lng)"
+                  value={locationValue}
+                  onChange={(event) => form.setValue('location', event.target.value, { shouldValidate: true })}
+                  error={!!form.formState.errors.location}
+                  helperText={form.formState.errors.location?.message ?? 'روی نقشه کلیک کنید یا دستی وارد کنید'}
+                />
 
-                <Divider textAlign="right">مرحله ۱: تصاویر</Divider>
+                <MapLocationPicker
+                  value={locationValue}
+                  onChange={(value) => form.setValue('location', value, { shouldValidate: true, shouldDirty: true })}
+                />
+
+                <Divider textAlign="right">تصاویر پروژه</Divider>
                 <MediaUploadSection
                   title="تصاویر پروژه"
-                  helperText="ابتدا تصاویر پروژه را انتخاب کنید."
+                  helperText="تصاویر الان انتخاب می‌شوند و بعد از ایجاد پروژه، روی آن ثبت می‌شوند."
                   accept="image/*"
                   mediaType="img"
                   files={imagePreviews}
@@ -236,12 +338,19 @@ export const ProjectCreatePage = () => {
                     <Box component="img" src={item.url} alt={item.file.name} sx={{ width: '100%', height: 120, objectFit: 'cover', borderRadius: 1, border: '1px solid', borderColor: 'divider' }} />
                   )}
                 />
-              </>
+
+                <Stack direction="row" spacing={1} justifyContent="space-between">
+                  <Button variant="outlined" onClick={() => navigate('/projects')}>انصراف</Button>
+                  <Button type="submit" variant="contained" disabled={createMutation.isPending}>ایجاد پروژه و ادامه</Button>
+                </Stack>
+              </Stack>
             )}
 
             {activeStep === 1 && (
-              <>
-                <Divider textAlign="right">مرحله ۲: ویدیو و PDF</Divider>
+              <Stack spacing={2}>
+                <Chip color="success" label={`پروژه با شناسه ${createdProjectId} ایجاد شد`} sx={{ alignSelf: 'flex-start' }} />
+
+                <Divider textAlign="right">افزودن مدیا به پروژه</Divider>
                 <MediaUploadSection
                   title="ویدیوهای پروژه"
                   helperText="فایل‌های ویدیویی را انتخاب کنید (پیش‌نمایش فعال است)."
@@ -257,7 +366,7 @@ export const ProjectCreatePage = () => {
 
                 <MediaUploadSection
                   title="PDFهای پروژه"
-                  helperText="PDFها دونه‌دونه بعد از تصاویر و ویدیو آپلود می‌شوند."
+                  helperText="PDFها پس از تصاویر و ویدیوها به پروژه اضافه می‌شوند."
                   accept="application/pdf"
                   mediaType="pdf"
                   files={mediaFiles.pdf.map((file) => ({ file, url: '' }))}
@@ -265,20 +374,13 @@ export const ProjectCreatePage = () => {
                   onRemove={handleRemoveMedia}
                   renderPreview={() => null}
                 />
-              </>
-            )}
 
-            <Stack direction="row" spacing={1} justifyContent="space-between">
-              <Button variant="outlined" onClick={() => navigate('/projects')}>انصراف</Button>
-              <Stack direction="row" spacing={1}>
-                {activeStep === 1 && <Button variant="outlined" onClick={previousStep}>مرحله قبل</Button>}
-                {activeStep === 0 ? (
-                  <Button variant="contained" onClick={nextStep}>مرحله بعد</Button>
-                ) : (
-                  <Button type="submit" variant="contained" disabled={createMutation.isPending || uploadMediaMutation.isPending}>ثبت پروژه</Button>
-                )}
+                <Stack direction="row" spacing={1} justifyContent="space-between">
+                  <Button variant="outlined" onClick={() => setActiveStep(0)}>مرحله قبل</Button>
+                  <Button variant="contained" onClick={handleUploadMedia} disabled={uploadMediaMutation.isPending}>افزودن مدیا و پایان</Button>
+                </Stack>
               </Stack>
-            </Stack>
+            )}
           </Stack>
         </CardContent>
       </Card>
