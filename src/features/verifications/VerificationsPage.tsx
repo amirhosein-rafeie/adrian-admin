@@ -15,8 +15,14 @@ import type {
   postAdminVerificationsIdRejectRequestBodyJson
 } from '@/share/utils/api/__generated__/types';
 import { clientRequest } from '@/share/utils/api/clientRequest';
+import { resolveApiFileUrl } from '@/share/utils/fileUrl';
 
 type VerificationRow = NonNullable<get200AdminVerificationsResponseJson['verifications']>[number];
+
+const verificationTypeLabel: Record<string, string> = {
+  id_card_photo: 'کارت ملی',
+  id_card_video: 'ویدیو'
+};
 
 export const VerificationsPage = () => {
   const [drawer, setDrawer] = useState<VerificationRow | null>(null);
@@ -66,7 +72,7 @@ export const VerificationsPage = () => {
   const columns: GridColDef<VerificationRow>[] = [
     { field: 'id', headerName: 'شناسه', width: 90 },
     { field: 'user_id', headerName: 'شناسه کاربر', width: 120 },
-    { field: 'verification_type', headerName: 'نوع', width: 150 },
+    { field: 'verification_type', headerName: 'نوع مدرک', width: 150, valueGetter: (_, row) => verificationTypeLabel[row.verification_type ?? ''] ?? row.verification_type ?? '-' },
     { field: 'status', headerName: 'وضعیت', width: 130, renderCell: (p) => <StatusChip status={p.value} /> },
     { field: 'failure_reason', headerName: 'دلیل رد', width: 180, valueGetter: (_, row) => row.failure_reason ?? '-' },
     { field: 'created_at', headerName: 'ایجاد', width: 130 },
@@ -111,11 +117,11 @@ export const VerificationsPage = () => {
           <Typography variant="h6">جزئیات احراز هویت</Typography>
           <Typography>شناسه: {drawer?.id ?? '-'}</Typography>
           <Typography>کاربر: {drawer?.user_id ?? '-'}</Typography>
-          <Typography>نوع: {drawer?.verification_type ?? '-'}</Typography>
+          <Typography>نوع: {verificationTypeLabel[drawer?.verification_type ?? ''] ?? drawer?.verification_type ?? '-'}</Typography>
           <Typography>وضعیت: {drawer?.status ?? '-'}</Typography>
           <Typography>دلیل رد: {drawer?.failure_reason ?? '-'}</Typography>
-          <Typography>فایل: {drawer?.file_path ?? '-'}</Typography>
-          {drawer?.file_path ? <Button href={drawer.file_path} target="_blank" rel="noreferrer" variant="outlined">مشاهده مدرک</Button> : null}
+          <Typography>فایل: {resolveApiFileUrl(drawer?.file_path) || '-'}</Typography>
+          {drawer?.file_path ? <Button href={resolveApiFileUrl(drawer.file_path)} target="_blank" rel="noreferrer" variant="outlined">مشاهده مدرک</Button> : null}
         </Stack>
       </Drawer>
 

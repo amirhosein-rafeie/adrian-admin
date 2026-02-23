@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Box, Button, Card, CardContent, Checkbox, FormControlLabel, FormGroup, MenuItem, Stack, TextField, Typography } from '@mui/material';
+import { Box, Button, Card, CardContent, Checkbox, Chip, Divider, FormControlLabel, FormGroup, MenuItem, Paper, Stack, TextField, Typography } from '@mui/material';
 import { useMutation } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { useNavigate, useParams } from 'react-router-dom';
 import { z } from 'zod';
@@ -10,9 +10,10 @@ import { useSnackbar } from '@/hooks/useSnackbar';
 import { useProjectDetail } from '@/features/projects/useProjectDetail';
 import { queryClient } from '@/services/queryClient';
 import { PROJECTS_LIST } from '@/share/constants';
-import type { patchAdminProjectsIdRequestBodyJson } from '@/share/utils/api/__generated__/types';
+import type { patchAdminProjectsIdRequestBodyJson, postAdminProjectsIdMediaRequestBodyFormData } from '@/share/utils/api/__generated__/types';
 import { clientRequest } from '@/share/utils/api/clientRequest';
 import { gregorianToJalali, jalaliToGregorian } from '@/share/utils/jalaliDate';
+import { resolveApiFileUrl } from '@/share/utils/fileUrl';
 
 const optionalString = z.preprocess((value) => {
   if (value === '' || value === null || value === undefined) return undefined;
@@ -46,6 +47,8 @@ type ExtendedPatchPayload = patchAdminProjectsIdRequestBodyJson & {
   price_per_meter_token?: string | null;
   estimated_profit_percentage?: string | null;
 };
+type MediaType = 'img' | 'video' | 'pdf';
+type ProjectMedia = { id?: number; path?: string; name?: string; media_type?: MediaType };
 
 const projectOptions: { value: FormValues['options'][number]; label: string }[] = [
   { value: 'warehouse', label: 'انباری' },
@@ -60,6 +63,7 @@ export const ProjectEditPage = () => {
   const projectId = Number(id);
   const navigate = useNavigate();
   const { notify } = useSnackbar();
+  const [projectMedia, setProjectMedia] = useState<ProjectMedia[]>([]);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -87,7 +91,8 @@ export const ProjectEditPage = () => {
   const { data, isPending } = useProjectDetail(projectId);
 
   useEffect(() => {
-    const project = (data?.data as any)?.project;
+    const payload = data?.data as any;
+    const project = payload?.project;
     if (!project) return;
 
     form.reset({
@@ -109,6 +114,8 @@ export const ProjectEditPage = () => {
       contractor: project.contractor ?? '',
       options: Array.isArray(project.options) ? project.options : []
     });
+
+    setProjectMedia(Array.isArray(payload?.media) ? payload.media : []);
   }, [data, form]);
 
   const updateMutation = useMutation({
@@ -118,6 +125,49 @@ export const ProjectEditPage = () => {
         body: values as patchAdminProjectsIdRequestBodyJson
       })
   });
+
+  const uploadMediaMutation = useMutation({
+    mutationFn: ({ body }: { body: postAdminProjectsIdMediaRequestBodyFormData }) =>
+      clientRequest.POST('/admin/projects/{id}/media', {
+        params: { path: { id: projectId } },
+        body
+      })
+  });
+
+  const refreshProjectMedia = async () => {
+    const res = await clientRequest.GET('/admin/projects/{id}', { params: { path: { id: projectId } } });
+    const payload = res.data as any;
+    setProjectMedia(Array.isArray(payload?.media) ? payload.media : []);
+  };
+
+  const handleUploadMedia = async (type: MediaType, files: FileList | null) => {
+    try {
+      if (!files?.length) return;
+      const list = Array.from(files);
+      for (const file of list) {
+        const body = new FormData();
+        body.append('file', file);
+        body.append('media_type', type);
+        body.append('name', file.name);
+
+        await uploadMediaMutation.mutateAsync({ body: body as unknown as postAdminProjectsIdMediaRequestBodyFormData });
+      }
+      await refreshProjectMedia();
+      await queryClient.invalidateQueries({ queryKey: [PROJECTS_LIST] });
+      notify('مدیا با موفقیت آپلود شد');
+    } catch (error) {
+      notify((error as Error).message, 'error');
+    }
+  };
+
+  const mediaByType = useMemo(
+    () => ({
+      img: projectMedia.filter((item) => item.media_type === 'img'),
+      video: projectMedia.filter((item) => item.media_type === 'video'),
+      pdf: projectMedia.filter((item) => item.media_type === 'pdf')
+    }),
+    [projectMedia]
+  );
 
   const onSubmit = form.handleSubmit(async (values) => {
     try {
@@ -135,6 +185,39 @@ export const ProjectEditPage = () => {
       notify((error as Error).message, 'error');
     }
   });
+
+  const renderMediaSection = (title: string, type: MediaType, accept: string) => (
+    <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+      <Stack spacing={1.5}>
+        <Stack direction="row" justifyContent="space-between" alignItems="center">
+          <Typography variant="subtitle2" fontWeight={700}>{title}</Typography>
+          <Button variant="outlined" component="label" size="small" disabled={uploadMediaMutation.isPending || isPending}>
+            افزودن فایل
+            <input hidden type="file" accept={accept} multiple onChange={(e) => void handleUploadMedia(type, e.currentTarget.files)} />
+          </Button>
+        </Stack>
+
+        {mediaByType[type].length === 0 ? (
+          <Typography variant="body2" color="text.secondary">فایلی ثبت نشده است.</Typography>
+        ) : (
+          <Stack direction="row" spacing={2} useFlexGap flexWrap="wrap">
+            {mediaByType[type].map((item) => (
+              <Paper key={`${item.id}-${item.path}`} variant="outlined" sx={{ p: 1, width: 180 }}>
+                <Typography variant="caption" display="block" noWrap>{item.name ?? 'بدون نام'}</Typography>
+                {type === 'img' ? (
+                  <Box component="img" src={resolveApiFileUrl(item.path)} alt={item.name ?? 'media'} sx={{ mt: 1, width: '100%', height: 110, objectFit: 'cover', borderRadius: 1 }} />
+                ) : type === 'video' ? (
+                  <Box component="video" src={resolveApiFileUrl(item.path)} controls sx={{ mt: 1, width: '100%', height: 110, borderRadius: 1, backgroundColor: 'black' }} />
+                ) : (
+                  <Button href={resolveApiFileUrl(item.path)} target="_blank" rel="noreferrer" sx={{ mt: 1 }} size="small">مشاهده PDF</Button>
+                )}
+              </Paper>
+            ))}
+          </Stack>
+        )}
+      </Stack>
+    </Paper>
+  );
 
   return (
     <>
@@ -222,6 +305,16 @@ export const ProjectEditPage = () => {
                 )}
               />
             </Stack>
+
+            <Divider textAlign="right">مدیاهای پروژه</Divider>
+            <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+              <Chip label={`تصاویر: ${mediaByType.img.length}`} />
+              <Chip label={`ویدیوها: ${mediaByType.video.length}`} />
+              <Chip label={`PDFها: ${mediaByType.pdf.length}`} />
+            </Stack>
+            {renderMediaSection('تصاویر', 'img', 'image/*')}
+            {renderMediaSection('ویدیوها', 'video', 'video/*')}
+            {renderMediaSection('فایل‌های PDF', 'pdf', 'application/pdf')}
 
             <Stack direction="row" spacing={1} justifyContent="space-between">
               <Button variant="outlined" onClick={() => navigate('/projects')}>انصراف</Button>
