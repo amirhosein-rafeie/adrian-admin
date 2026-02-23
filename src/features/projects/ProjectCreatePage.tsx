@@ -123,7 +123,8 @@ const MediaUploadSection = ({
   files,
   onChange,
   onRemove,
-  renderPreview
+  renderPreview,
+  disabled
 }: {
   title: string;
   helperText: string;
@@ -133,6 +134,7 @@ const MediaUploadSection = ({
   onChange: (type: MediaType, files: FileList | null) => void;
   onRemove: (type: MediaType, name: string) => void;
   renderPreview: (item: MediaPreview) => ReactNode;
+  disabled?: boolean;
 }) => (
   <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
     <Stack spacing={1.5}>
@@ -141,7 +143,7 @@ const MediaUploadSection = ({
           <Typography variant="subtitle1" fontWeight={700}>{title}</Typography>
           <Typography variant="caption" color="text.secondary">{helperText}</Typography>
         </Box>
-        <Button variant="outlined" component="label" size="small">
+        <Button variant="outlined" component="label" size="small" disabled={disabled}>
           انتخاب فایل
           <input hidden type="file" accept={accept} multiple onChange={(event) => onChange(mediaType, event.currentTarget.files)} />
         </Button>
@@ -215,8 +217,30 @@ export const ProjectCreatePage = () => {
       })
   });
 
+  const uploadSelectedFiles = async (type: MediaType, files: FileList | null) => {
+    try {
+      if (!createdProjectId) throw new Error('ابتدا پروژه را ایجاد کنید');
+      if (!files || files.length === 0) return;
+
+      const fileList = Array.from(files);
+      for (const file of fileList) {
+        await uploadMediaMutation.mutateAsync({
+          projectId: createdProjectId,
+          body: { file: file as unknown as string, media_type: type, name: file.name }
+        });
+
+        setMediaFiles((prev) => ({ ...prev, [type]: [...prev[type], file] }));
+      }
+
+      await queryClient.invalidateQueries({ queryKey: [PROJECTS_LIST] });
+      notify(`${fileList.length} فایل ${type === 'img' ? 'تصویر' : type === 'video' ? 'ویدیو' : 'PDF'} آپلود شد`);
+    } catch (error) {
+      notify((error as Error).message, 'error');
+    }
+  };
+
   const handleMediaChange = (type: MediaType, files: FileList | null) => {
-    setMediaFiles((prev) => ({ ...prev, [type]: files ? Array.from(files) : [] }));
+    void uploadSelectedFiles(type, files);
   };
 
   const handleRemoveMedia = (type: MediaType, fileName: string) => {
@@ -231,37 +255,15 @@ export const ProjectCreatePage = () => {
 
       setCreatedProjectId(projectId);
       setActiveStep(1);
-      notify('پروژه ایجاد شد، حالا مدیاها را اضافه کنید');
+      notify('پروژه ایجاد شد، حالا مدیاها را انتخاب کنید تا لحظه‌ای آپلود شوند');
     } catch (error) {
       notify((error as Error).message, 'error');
     }
   });
 
-  const handleUploadMedia = async () => {
-    try {
-      if (!createdProjectId) throw new Error('ابتدا پروژه را ایجاد کنید');
-
-      const uploadOrder: MediaType[] = ['img', 'video', 'pdf'];
-      for (const mediaType of uploadOrder) {
-        for (const file of mediaFiles[mediaType]) {
-          await uploadMediaMutation.mutateAsync({
-            projectId: createdProjectId,
-            body: { file: file as unknown as string, media_type: mediaType, name: file.name }
-          });
-        }
-      }
-
-      await queryClient.invalidateQueries({ queryKey: [PROJECTS_LIST] });
-      notify('مدیاها با موفقیت به پروژه اضافه شدند');
-      navigate('/projects');
-    } catch (error) {
-      notify((error as Error).message, 'error');
-    }
-  };
-
   return (
     <>
-      <PageHeader title="ایجاد پروژه" subtitle="اول پروژه ساخته می‌شود، سپس همه مدیاها (عکس/ویدیو/PDF) به آن اضافه می‌شوند" />
+      <PageHeader title="ایجاد پروژه" subtitle="اول پروژه ساخته می‌شود، سپس مدیاها لحظه‌ای و دونه‌دونه اضافه می‌شوند" />
       <Card>
         <CardContent>
           <Stack spacing={3}>
@@ -324,16 +326,17 @@ export const ProjectCreatePage = () => {
             {activeStep === 1 && (
               <Stack spacing={2}>
                 <Chip color="success" label={`پروژه با شناسه ${createdProjectId} ایجاد شد`} sx={{ alignSelf: 'flex-start' }} />
-                <Divider textAlign="right">افزودن مدیا به پروژه</Divider>
+                <Divider textAlign="right">افزودن مدیا به پروژه (آپلود لحظه‌ای)</Divider>
 
                 <MediaUploadSection
                   title="تصاویر پروژه"
-                  helperText="عکس‌ها در این مرحله اضافه می‌شوند."
+                  helperText="با انتخاب فایل، عکس‌ها همان لحظه و دونه‌دونه آپلود می‌شوند."
                   accept="image/*"
                   mediaType="img"
                   files={imagePreviews}
                   onChange={handleMediaChange}
                   onRemove={handleRemoveMedia}
+                  disabled={uploadMediaMutation.isPending}
                   renderPreview={(item) => (
                     <Box component="img" src={item.url} alt={item.file.name} sx={{ width: '100%', height: 120, objectFit: 'cover', borderRadius: 1, border: '1px solid', borderColor: 'divider' }} />
                   )}
@@ -341,12 +344,13 @@ export const ProjectCreatePage = () => {
 
                 <MediaUploadSection
                   title="ویدیوهای پروژه"
-                  helperText="فایل‌های ویدیویی را انتخاب کنید (پیش‌نمایش فعال است)."
+                  helperText="با انتخاب فایل، ویدیوها همان لحظه و دونه‌دونه آپلود می‌شوند."
                   accept="video/*"
                   mediaType="video"
                   files={videoPreviews}
                   onChange={handleMediaChange}
                   onRemove={handleRemoveMedia}
+                  disabled={uploadMediaMutation.isPending}
                   renderPreview={(item) => (
                     <Box component="video" controls src={item.url} sx={{ width: '100%', height: 120, borderRadius: 1, border: '1px solid', borderColor: 'divider', backgroundColor: 'black' }} />
                   )}
@@ -354,18 +358,19 @@ export const ProjectCreatePage = () => {
 
                 <MediaUploadSection
                   title="PDFهای پروژه"
-                  helperText="PDFها پس از عکس و ویدیو به پروژه اضافه می‌شوند."
+                  helperText="با انتخاب فایل، PDFها همان لحظه و دونه‌دونه آپلود می‌شوند."
                   accept="application/pdf"
                   mediaType="pdf"
                   files={mediaFiles.pdf.map((file) => ({ file, url: '' }))}
                   onChange={handleMediaChange}
                   onRemove={handleRemoveMedia}
+                  disabled={uploadMediaMutation.isPending}
                   renderPreview={() => null}
                 />
 
                 <Stack direction="row" spacing={1} justifyContent="space-between">
                   <Button variant="outlined" onClick={() => setActiveStep(0)}>مرحله قبل</Button>
-                  <Button variant="contained" onClick={handleUploadMedia} disabled={uploadMediaMutation.isPending}>افزودن مدیا و پایان</Button>
+                  <Button variant="contained" onClick={() => navigate('/projects')}>اتمام و بازگشت به لیست</Button>
                 </Stack>
               </Stack>
             )}
