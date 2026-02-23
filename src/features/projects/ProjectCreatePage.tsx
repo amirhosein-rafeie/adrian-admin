@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Box, Button, Card, CardContent, Chip, Divider, MenuItem, Paper, Stack, TextField, Typography } from '@mui/material';
+import { Box, Button, Card, CardContent, Chip, Divider, MenuItem, Paper, Stack, Step, StepLabel, Stepper, TextField, Typography } from '@mui/material';
 import { useMutation } from '@tanstack/react-query';
 import { ReactNode, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -30,6 +30,8 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>;
 type MediaType = 'img' | 'video' | 'pdf';
 type MediaPreview = { file: File; url: string };
+
+const steps = ['اطلاعات پروژه + تصاویر', 'ویدیو و PDF + ثبت نهایی'];
 
 const MediaUploadSection = ({
   title,
@@ -69,12 +71,12 @@ const MediaUploadSection = ({
         <Stack spacing={1.5}>
           <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
             {files.map((item) => (
-              <Chip key={item.file.name} label={item.file.name} onDelete={() => onRemove(mediaType, item.file.name)} />
+              <Chip key={`${item.file.name}-${item.file.lastModified}`} label={item.file.name} onDelete={() => onRemove(mediaType, item.file.name)} />
             ))}
           </Stack>
           <Stack direction="row" spacing={2} useFlexGap flexWrap="wrap">
             {files.map((item) => (
-              <Box key={`${item.file.name}-preview`} sx={{ width: 180 }}>
+              <Box key={`${item.file.name}-${item.file.lastModified}-preview`} sx={{ width: 180 }}>
                 {renderPreview(item)}
               </Box>
             ))}
@@ -86,6 +88,7 @@ const MediaUploadSection = ({
 );
 
 export const ProjectCreatePage = () => {
+  const [activeStep, setActiveStep] = useState(0);
   const [mediaFiles, setMediaFiles] = useState<Record<MediaType, File[]>>({ img: [], video: [], pdf: [] });
   const { notify } = useSnackbar();
   const navigate = useNavigate();
@@ -108,15 +111,8 @@ export const ProjectCreatePage = () => {
     }
   });
 
-  const imagePreviews = useMemo(
-    () => mediaFiles.img.map((file) => ({ file, url: URL.createObjectURL(file) })),
-    [mediaFiles.img]
-  );
-
-  const videoPreviews = useMemo(
-    () => mediaFiles.video.map((file) => ({ file, url: URL.createObjectURL(file) })),
-    [mediaFiles.video]
-  );
+  const imagePreviews = useMemo(() => mediaFiles.img.map((file) => ({ file, url: URL.createObjectURL(file) })), [mediaFiles.img]);
+  const videoPreviews = useMemo(() => mediaFiles.video.map((file) => ({ file, url: URL.createObjectURL(file) })), [mediaFiles.video]);
 
   useEffect(() => {
     return () => {
@@ -154,30 +150,37 @@ export const ProjectCreatePage = () => {
     }));
   };
 
-  const handleSubmit = form.handleSubmit(async (values) => {
+  const nextStep = async () => {
+    const valid = await form.trigger();
+    if (!valid) {
+      notify('ابتدا خطاهای فرم را برطرف کنید', 'error');
+      return;
+    }
+    setActiveStep(1);
+  };
+
+  const previousStep = () => setActiveStep(0);
+
+  const handleSubmitFinal = form.handleSubmit(async (values) => {
     try {
       const createResult = (await createMutation.mutateAsync(values)) as { data?: { id?: number } };
       const projectId = createResult.data?.id;
 
-      if (!projectId) {
-        throw new Error('شناسه پروژه از سرور دریافت نشد');
-      }
+      if (!projectId) throw new Error('شناسه پروژه از سرور دریافت نشد');
 
-      const uploads = (Object.entries(mediaFiles) as Array<[MediaType, File[]]>).flatMap(([mediaType, files]) =>
-        files.map((file) =>
-          uploadMediaMutation.mutateAsync({
+      const uploadOrder: MediaType[] = ['img', 'video', 'pdf'];
+
+      for (const mediaType of uploadOrder) {
+        for (const file of mediaFiles[mediaType]) {
+          await uploadMediaMutation.mutateAsync({
             projectId,
             body: {
               file: file as unknown as string,
               media_type: mediaType,
               name: file.name
             }
-          })
-        )
-      );
-
-      if (uploads.length > 0) {
-        await Promise.all(uploads);
+          });
+        }
       }
 
       await queryClient.invalidateQueries({ queryKey: [PROJECTS_LIST] });
@@ -190,78 +193,91 @@ export const ProjectCreatePage = () => {
 
   return (
     <>
-      <PageHeader title="ایجاد پروژه" subtitle="تمام اطلاعات پروژه و مدیا را در یک صفحه ثبت کنید" />
+      <PageHeader title="ایجاد پروژه" subtitle="فرایند ساخت پروژه در دو مرحله" />
       <Card>
         <CardContent>
-          <Stack spacing={2} component="form" onSubmit={handleSubmit}>
-            <TextField label="نام پروژه" {...form.register('name')} error={!!form.formState.errors.name} helperText={form.formState.errors.name?.message} />
-            <TextField label="توضیحات" {...form.register('description')} error={!!form.formState.errors.description} helperText={form.formState.errors.description?.message} multiline minRows={2} />
-            <TextField select label="وضعیت" {...form.register('status')}>
-              <MenuItem value="processing">در حال پردازش</MenuItem>
-              <MenuItem value="finished">تکمیل‌شده</MenuItem>
-            </TextField>
-            <TextField label="آدرس" {...form.register('address')} error={!!form.formState.errors.address} helperText={form.formState.errors.address?.message} />
-            <TextField label="مختصات (lat lng)" {...form.register('location')} error={!!form.formState.errors.location} helperText={form.formState.errors.location?.message} />
-            <TextField label="قیمت" {...form.register('price')} error={!!form.formState.errors.price} helperText={form.formState.errors.price?.message} />
-            <TextField label="واحد قیمت" {...form.register('price_currency')} error={!!form.formState.errors.price_currency} helperText={form.formState.errors.price_currency?.message} />
-            <TextField type="number" label="تعداد توکن" {...form.register('token_count')} error={!!form.formState.errors.token_count} helperText={form.formState.errors.token_count?.message} />
-            <TextField label="نام توکن" {...form.register('token_name')} error={!!form.formState.errors.token_name} helperText={form.formState.errors.token_name?.message} />
-            <TextField type="date" label="تاریخ شروع" {...form.register('start_time')} error={!!form.formState.errors.start_time} helperText={form.formState.errors.start_time?.message} InputLabelProps={{ shrink: true }} />
-            <TextField type="date" label="ددلاین" {...form.register('dead_line')} error={!!form.formState.errors.dead_line} helperText={form.formState.errors.dead_line?.message} InputLabelProps={{ shrink: true }} />
-            <TextField label="پیمانکار" {...form.register('contractor')} error={!!form.formState.errors.contractor} helperText={form.formState.errors.contractor?.message} />
+          <Stack spacing={3} component="form" onSubmit={handleSubmitFinal}>
+            <Stepper activeStep={activeStep} alternativeLabel>
+              {steps.map((step) => (
+                <Step key={step}>
+                  <StepLabel>{step}</StepLabel>
+                </Step>
+              ))}
+            </Stepper>
 
-            <Divider textAlign="right">آپلود مدیا</Divider>
+            {activeStep === 0 && (
+              <>
+                <TextField label="نام پروژه" {...form.register('name')} error={!!form.formState.errors.name} helperText={form.formState.errors.name?.message} />
+                <TextField label="توضیحات" {...form.register('description')} error={!!form.formState.errors.description} helperText={form.formState.errors.description?.message} multiline minRows={2} />
+                <TextField select label="وضعیت" {...form.register('status')}>
+                  <MenuItem value="processing">در حال پردازش</MenuItem>
+                  <MenuItem value="finished">تکمیل‌شده</MenuItem>
+                </TextField>
+                <TextField label="آدرس" {...form.register('address')} error={!!form.formState.errors.address} helperText={form.formState.errors.address?.message} />
+                <TextField label="مختصات (lat lng)" {...form.register('location')} error={!!form.formState.errors.location} helperText={form.formState.errors.location?.message} />
+                <TextField label="قیمت" {...form.register('price')} error={!!form.formState.errors.price} helperText={form.formState.errors.price?.message} />
+                <TextField label="واحد قیمت" {...form.register('price_currency')} error={!!form.formState.errors.price_currency} helperText={form.formState.errors.price_currency?.message} />
+                <TextField type="number" label="تعداد توکن" {...form.register('token_count')} error={!!form.formState.errors.token_count} helperText={form.formState.errors.token_count?.message} />
+                <TextField label="نام توکن" {...form.register('token_name')} error={!!form.formState.errors.token_name} helperText={form.formState.errors.token_name?.message} />
+                <TextField type="date" label="تاریخ شروع" {...form.register('start_time')} error={!!form.formState.errors.start_time} helperText={form.formState.errors.start_time?.message} InputLabelProps={{ shrink: true }} />
+                <TextField type="date" label="ددلاین" {...form.register('dead_line')} error={!!form.formState.errors.dead_line} helperText={form.formState.errors.dead_line?.message} InputLabelProps={{ shrink: true }} />
+                <TextField label="پیمانکار" {...form.register('contractor')} error={!!form.formState.errors.contractor} helperText={form.formState.errors.contractor?.message} />
 
-            <MediaUploadSection
-              title="تصاویر پروژه"
-              helperText="می‌توانید چند تصویر انتخاب کنید و پیش‌نمایش را ببینید."
-              accept="image/*"
-              mediaType="img"
-              files={imagePreviews}
-              onChange={handleMediaChange}
-              onRemove={handleRemoveMedia}
-              renderPreview={(item) => (
-                <Box
-                  component="img"
-                  src={item.url}
-                  alt={item.file.name}
-                  sx={{ width: '100%', height: 120, objectFit: 'cover', borderRadius: 1, border: '1px solid', borderColor: 'divider' }}
+                <Divider textAlign="right">مرحله ۱: تصاویر</Divider>
+                <MediaUploadSection
+                  title="تصاویر پروژه"
+                  helperText="ابتدا تصاویر پروژه را انتخاب کنید."
+                  accept="image/*"
+                  mediaType="img"
+                  files={imagePreviews}
+                  onChange={handleMediaChange}
+                  onRemove={handleRemoveMedia}
+                  renderPreview={(item) => (
+                    <Box component="img" src={item.url} alt={item.file.name} sx={{ width: '100%', height: 120, objectFit: 'cover', borderRadius: 1, border: '1px solid', borderColor: 'divider' }} />
+                  )}
                 />
-              )}
-            />
+              </>
+            )}
 
-            <MediaUploadSection
-              title="ویدیوهای پروژه"
-              helperText="می‌توانید چند ویدیو انتخاب کنید و پیش‌نمایش را ببینید."
-              accept="video/*"
-              mediaType="video"
-              files={videoPreviews}
-              onChange={handleMediaChange}
-              onRemove={handleRemoveMedia}
-              renderPreview={(item) => (
-                <Box
-                  component="video"
-                  controls
-                  src={item.url}
-                  sx={{ width: '100%', height: 120, borderRadius: 1, border: '1px solid', borderColor: 'divider', backgroundColor: 'black' }}
+            {activeStep === 1 && (
+              <>
+                <Divider textAlign="right">مرحله ۲: ویدیو و PDF</Divider>
+                <MediaUploadSection
+                  title="ویدیوهای پروژه"
+                  helperText="فایل‌های ویدیویی را انتخاب کنید (پیش‌نمایش فعال است)."
+                  accept="video/*"
+                  mediaType="video"
+                  files={videoPreviews}
+                  onChange={handleMediaChange}
+                  onRemove={handleRemoveMedia}
+                  renderPreview={(item) => (
+                    <Box component="video" controls src={item.url} sx={{ width: '100%', height: 120, borderRadius: 1, border: '1px solid', borderColor: 'divider', backgroundColor: 'black' }} />
+                  )}
                 />
-              )}
-            />
 
-            <MediaUploadSection
-              title="PDFهای پروژه"
-              helperText="برای PDF فقط نام فایل نمایش داده می‌شود."
-              accept="application/pdf"
-              mediaType="pdf"
-              files={mediaFiles.pdf.map((file) => ({ file, url: '' }))}
-              onChange={handleMediaChange}
-              onRemove={handleRemoveMedia}
-              renderPreview={() => null}
-            />
+                <MediaUploadSection
+                  title="PDFهای پروژه"
+                  helperText="PDFها دونه‌دونه بعد از تصاویر و ویدیو آپلود می‌شوند."
+                  accept="application/pdf"
+                  mediaType="pdf"
+                  files={mediaFiles.pdf.map((file) => ({ file, url: '' }))}
+                  onChange={handleMediaChange}
+                  onRemove={handleRemoveMedia}
+                  renderPreview={() => null}
+                />
+              </>
+            )}
 
-            <Stack direction="row" spacing={1} justifyContent="flex-end">
+            <Stack direction="row" spacing={1} justifyContent="space-between">
               <Button variant="outlined" onClick={() => navigate('/projects')}>انصراف</Button>
-              <Button type="submit" variant="contained" disabled={createMutation.isPending || uploadMediaMutation.isPending}>ثبت پروژه</Button>
+              <Stack direction="row" spacing={1}>
+                {activeStep === 1 && <Button variant="outlined" onClick={previousStep}>مرحله قبل</Button>}
+                {activeStep === 0 ? (
+                  <Button variant="contained" onClick={nextStep}>مرحله بعد</Button>
+                ) : (
+                  <Button type="submit" variant="contained" disabled={createMutation.isPending || uploadMediaMutation.isPending}>ثبت پروژه</Button>
+                )}
+              </Stack>
             </Stack>
           </Stack>
         </CardContent>
