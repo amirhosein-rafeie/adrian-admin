@@ -22,6 +22,10 @@ const schema = z.object({
   price: z.string().min(1, 'قیمت الزامی است'),
   price_currency: z.string().min(1, 'واحد قیمت الزامی است'),
   token_count: z.coerce.number().min(1, 'تعداد توکن باید حداقل ۱ باشد'),
+  token_sold: z.preprocess((value) => {
+    if (value === '' || value === null || value === undefined) return undefined;
+    return value;
+  }, z.coerce.number().min(0, 'تعداد توکن فروخته‌شده نمی‌تواند منفی باشد').optional()),
   token_name: z.string().min(2, 'نام توکن الزامی است'),
   start_time: z.string().min(1, 'تاریخ شروع الزامی است').refine((value) => Boolean(jalaliToGregorian(value)), 'فرمت تاریخ شروع معتبر نیست'),
   dead_line: z.string().min(1, 'ددلاین الزامی است').refine((value) => Boolean(jalaliToGregorian(value)), 'فرمت ددلاین معتبر نیست'),
@@ -198,6 +202,7 @@ export const ProjectCreatePage = () => {
       price: '',
       price_currency: 'IRR',
       token_count: 1,
+      token_sold: 0,
       token_name: '',
       start_time: '',
       dead_line: '',
@@ -313,6 +318,7 @@ export const ProjectCreatePage = () => {
                       <TextField label="قیمت" {...form.register('price')} error={!!form.formState.errors.price} helperText={form.formState.errors.price?.message} />
                       <TextField label="واحد قیمت" {...form.register('price_currency')} error={!!form.formState.errors.price_currency} helperText={form.formState.errors.price_currency?.message} />
                       <TextField type="number" label="تعداد توکن" {...form.register('token_count')} error={!!form.formState.errors.token_count} helperText={form.formState.errors.token_count?.message} />
+                      <TextField type="number" label="توکن فروخته‌شده" {...form.register('token_sold')} error={!!form.formState.errors.token_sold} helperText={form.formState.errors.token_sold?.message ?? 'اختیاری'} />
                       <TextField label="نام توکن" {...form.register('token_name')} error={!!form.formState.errors.token_name} helperText={form.formState.errors.token_name?.message} />
                       <Controller
                         name="start_time"
