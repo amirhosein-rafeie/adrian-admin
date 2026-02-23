@@ -224,9 +224,15 @@ export const ProjectCreatePage = () => {
 
       const fileList = Array.from(files);
       for (const file of fileList) {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('media_type', type);
+        formData.append('MediaType', type);
+        formData.append('name', file.name);
+
         await uploadMediaMutation.mutateAsync({
           projectId: createdProjectId,
-          body: { file: file as unknown as string, media_type: type, name: file.name }
+          body: formData as unknown as postAdminProjectsIdMediaRequestBodyFormData
         });
 
         setMediaFiles((prev) => ({ ...prev, [type]: [...prev[type], file] }));
