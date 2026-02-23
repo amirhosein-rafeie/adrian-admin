@@ -41,6 +41,7 @@ export type post400LoginCompleteUserInfoResponseJson = paths['/login/complete_us
 export type post401LoginCompleteUserInfoResponseJson = paths['/login/complete_user_info']['post']['responses']['401']['content']['application/json'];
 export type post403LoginCompleteUserInfoResponseJson = paths['/login/complete_user_info']['post']['responses']['403']['content']['application/json'];
 export type post404LoginCompleteUserInfoResponseJson = paths['/login/complete_user_info']['post']['responses']['404']['content']['application/json'];
+export type post409LoginCompleteUserInfoResponseJson = paths['/login/complete_user_info']['post']['responses']['409']['content']['application/json'];
 export type post500LoginCompleteUserInfoResponseJson = paths['/login/complete_user_info']['post']['responses']['500']['content']['application/json'];
 export type post502LoginCompleteUserInfoResponseJson = paths['/login/complete_user_info']['post']['responses']['502']['content']['application/json'];
 export type postLoginCompleteUserInfoQueryParams = paths['/login/complete_user_info']['post']['parameters']['query'];
@@ -618,6 +619,24 @@ export type deleteAdminBankAccountsIdQueryParams = paths['/admin/bank_accounts/{
 export type deleteAdminBankAccountsIdHeaderParams = paths['/admin/bank_accounts/{id}']['delete']['parameters']['header'];
 export type deleteAdminBankAccountsIdPathParams = paths['/admin/bank_accounts/{id}']['delete']['parameters']['path'];
 export type deleteAdminBankAccountsIdCookieParams = paths['/admin/bank_accounts/{id}']['delete']['parameters']['cookie'];
+
+export type post200AdminSeedMediaResponseJson = paths['/admin/seed/media']['post']['responses']['200']['content']['application/json'];
+export type post401AdminSeedMediaResponseJson = paths['/admin/seed/media']['post']['responses']['401']['content']['application/json'];
+export type post403AdminSeedMediaResponseJson = paths['/admin/seed/media']['post']['responses']['403']['content']['application/json'];
+export type post500AdminSeedMediaResponseJson = paths['/admin/seed/media']['post']['responses']['500']['content']['application/json'];
+export type postAdminSeedMediaQueryParams = paths['/admin/seed/media']['post']['parameters']['query'];
+export type postAdminSeedMediaHeaderParams = paths['/admin/seed/media']['post']['parameters']['header'];
+export type postAdminSeedMediaPathParams = paths['/admin/seed/media']['post']['parameters']['path'];
+export type postAdminSeedMediaCookieParams = paths['/admin/seed/media']['post']['parameters']['cookie'];
+
+export type post200AdminResetResponseJson = paths['/admin/reset']['post']['responses']['200']['content']['application/json'];
+export type post401AdminResetResponseJson = paths['/admin/reset']['post']['responses']['401']['content']['application/json'];
+export type post403AdminResetResponseJson = paths['/admin/reset']['post']['responses']['403']['content']['application/json'];
+export type post500AdminResetResponseJson = paths['/admin/reset']['post']['responses']['500']['content']['application/json'];
+export type postAdminResetQueryParams = paths['/admin/reset']['post']['parameters']['query'];
+export type postAdminResetHeaderParams = paths['/admin/reset']['post']['parameters']['header'];
+export type postAdminResetPathParams = paths['/admin/reset']['post']['parameters']['path'];
+export type postAdminResetCookieParams = paths['/admin/reset']['post']['parameters']['cookie'];
 
 export type post200TestGenerateDataResponseJson = paths['/test/generate-data']['post']['responses']['200']['content']['application/json'];
 export type post401TestGenerateDataResponseJson = paths['/test/generate-data']['post']['responses']['401']['content']['application/json'];

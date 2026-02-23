@@ -369,7 +369,7 @@ export interface paths {
                         "application/json": components["schemas"]["LoginResponse"] | components["schemas"]["UserStatusErrorResponse"];
                     };
                 };
-                /** @description Validation error, Finnotech verification failed, or duplicate unique field */
+                /** @description Validation error or Finnotech IBAN verification failed */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -403,6 +403,15 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["NotFoundErrorResponse"];
+                    };
+                };
+                /** @description Unique constraint violation — a field value is already taken by another user */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DuplicateFieldErrorResponse"];
                     };
                 };
                 /** @description Internal server error (database error) */
@@ -2120,6 +2129,10 @@ export interface paths {
                          *               "parking",
                          *               "warehouse"
                          *             ],
+                         *             "sale_price_per_meter": "50000000",
+                         *             "token_price_toman": "5000000",
+                         *             "price_per_meter_token": "10",
+                         *             "estimated_profit_percentage": "25",
                          *             "token_id": 1,
                          *             "created_at": "2026-01-01T00:00:00Z",
                          *             "updated_at": "2026-01-07T00:00:00Z"
@@ -2245,6 +2258,10 @@ export interface paths {
                          *         ],
                          *         "description": "Luxury residential complex",
                          *         "contractor": "ABC Construction",
+                         *         "sale_price_per_meter": "50000000",
+                         *         "token_price_toman": "5000000",
+                         *         "price_per_meter_token": "10",
+                         *         "estimated_profit_percentage": "25",
                          *         "token_id": 1,
                          *         "created_at": "2026-01-01T00:00:00Z",
                          *         "updated_at": "2026-01-07T00:00:00Z"
@@ -2340,6 +2357,10 @@ export interface paths {
                          *             "id": 1,
                          *             "name": "Tehran Tower Complex",
                          *             "status": "processing",
+                         *             "sale_price_per_meter": "50000000",
+                         *             "token_price_toman": "5000000",
+                         *             "price_per_meter_token": "10",
+                         *             "estimated_profit_percentage": "25",
                          *             "token_id": 1,
                          *             "created_at": "2026-01-01T00:00:00Z"
                          *           },
@@ -3446,7 +3467,7 @@ export interface paths {
                     /** @description Search by mobile number, first name, last name, or national code */
                     search?: string;
                     /** @description Filter by user status */
-                    status?: "no_info" | "no_password" | "active";
+                    status?: "no_info" | "no_password" | "active" | "not_active" | "not_verified";
                     /** @description Sort by field */
                     sort_by?: "created_at" | "mobile_number" | "status";
                     /** @description Sort direction */
@@ -3479,7 +3500,7 @@ export interface paths {
                                 /** Format: date-time */
                                 birth_date?: string | null;
                                 /** @enum {string} */
-                                status?: "no_info" | "no_password" | "active";
+                                status?: "no_info" | "no_password" | "active" | "not_active" | "not_verified";
                                 /** Format: date-time */
                                 created_at?: string;
                                 /** Format: date-time */
@@ -3582,7 +3603,7 @@ export interface paths {
                             /** Format: date-time */
                             birth_date?: string | null;
                             /** @enum {string} */
-                            status?: "no_info" | "no_password" | "active";
+                            status?: "no_info" | "no_password" | "active" | "not_active" | "not_verified";
                             /** Format: date-time */
                             created_at?: string;
                             /** Format: date-time */
@@ -3670,7 +3691,7 @@ export interface paths {
                         /** Format: date-time */
                         birth_date?: string | null;
                         /** @enum {string|null} */
-                        status?: "no_info" | "no_password" | "active" | null;
+                        status?: "no_info" | "no_password" | "active" | "not_active" | "not_verified" | null;
                     };
                 };
             };
@@ -3691,7 +3712,7 @@ export interface paths {
                             /** Format: date-time */
                             birth_date?: string | null;
                             /** @enum {string} */
-                            status?: "no_info" | "no_password" | "active";
+                            status?: "no_info" | "no_password" | "active" | "not_active" | "not_verified";
                             /** Format: date-time */
                             created_at?: string;
                             /** Format: date-time */
@@ -3848,7 +3869,7 @@ export interface paths {
                         /** Format: date-time */
                         birth_date?: string | null;
                         /** @enum {string|null} */
-                        status?: "no_info" | "no_password" | "active" | null;
+                        status?: "no_info" | "no_password" | "active" | "not_active" | "not_verified" | null;
                     };
                 };
             };
@@ -3869,7 +3890,7 @@ export interface paths {
                             /** Format: date-time */
                             birth_date?: string | null;
                             /** @enum {string} */
-                            status?: "no_info" | "no_password" | "active";
+                            status?: "no_info" | "no_password" | "active" | "not_active" | "not_verified";
                             /** Format: date-time */
                             created_at?: string;
                             /** Format: date-time */
@@ -4088,6 +4109,14 @@ export interface paths {
                         description?: string | null;
                         /** @example ABC Construction */
                         contractor?: string | null;
+                        /** @description قیمت فروش هر متر ملک - Sale price per square meter of property */
+                        sale_price_per_meter?: string;
+                        /** @description قیمت هر توکن به تومان - Price per token in Toman */
+                        token_price_toman?: string;
+                        /** @description قیمت هر متر به توکن - Price per meter in tokens */
+                        price_per_meter_token?: string;
+                        /** @description درصد سود پیش بینی پروژه - Estimated project profit percentage */
+                        estimated_profit_percentage?: string;
                     };
                 };
             };
@@ -4281,6 +4310,14 @@ export interface paths {
                         options?: ("warehouse" | "heating_system" | "cooling_system" | "elevator" | "no_elevator_required")[] | null;
                         description?: string | null;
                         contractor?: string | null;
+                        /** @description قیمت فروش هر متر ملک - Sale price per square meter of property */
+                        sale_price_per_meter?: string | null;
+                        /** @description قیمت هر توکن به تومان - Price per token in Toman */
+                        token_price_toman?: string | null;
+                        /** @description قیمت هر متر به توکن - Price per meter in tokens */
+                        price_per_meter_token?: string | null;
+                        /** @description درصد سود پیش بینی پروژه - Estimated project profit percentage */
+                        estimated_profit_percentage?: string | null;
                     };
                 };
             };
@@ -4467,6 +4504,14 @@ export interface paths {
                         options?: ("warehouse" | "heating_system" | "cooling_system" | "elevator" | "no_elevator_required")[] | null;
                         description?: string | null;
                         contractor?: string | null;
+                        /** @description قیمت فروش هر متر ملک - Sale price per square meter of property */
+                        sale_price_per_meter?: string | null;
+                        /** @description قیمت هر توکن به تومان - Price per token in Toman */
+                        token_price_toman?: string | null;
+                        /** @description قیمت هر متر به توکن - Price per meter in tokens */
+                        price_per_meter_token?: string | null;
+                        /** @description درصد سود پیش بینی پروژه - Estimated project profit percentage */
+                        estimated_profit_percentage?: string | null;
                     };
                 };
             };
@@ -5987,6 +6032,183 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/seed/media": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Seed project media with picsum images
+         * @description Clears all existing media records from `users.media`, `users.document`,
+         *     `projects.media`, and `projects.document`, then downloads **3 images**
+         *     from [picsum.photos](https://picsum.photos) for every project and stores
+         *     them under `uploads/projects/{id}/`.
+         *
+         *     Images are fetched with deterministic seeds so the same images are
+         *     re-downloaded on repeated calls:
+         *     - `image_1.jpg` (1200×800) — تصویر اصلی
+         *     - `image_2.jpg` (800×600)  — نمای بیرونی
+         *     - `image_3.jpg` (1000×700) — نمای داخلی
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Media seeded successfully */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @example project media seeded */
+                            message?: string;
+                            results?: {
+                                /**
+                                 * Format: int64
+                                 * @example 1
+                                 */
+                                project_id?: number;
+                                /**
+                                 * @example [
+                                 *       "uploads/projects/1/image_1.jpg",
+                                 *       "uploads/projects/1/image_2.jpg",
+                                 *       "uploads/projects/1/image_3.jpg"
+                                 *     ]
+                                 */
+                                files?: string[];
+                                /**
+                                 * @description Present only when this project failed
+                                 * @example
+                                 */
+                                error?: string;
+                            }[];
+                        };
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["UnauthorizedErrorResponse"];
+                    };
+                };
+                /** @description Admin access required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ForbiddenErrorResponse"];
+                    };
+                };
+                /** @description Internal server error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["InternalServerErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reset all data (keep admins & migrations)
+         * @description **Destructive — use with caution.**
+         *
+         *     Deletes every row from the following tables in FK-safe order:
+         *
+         *     `order` → `user_token` → `wallet_transaction` → `wallet` →
+         *     `users.document` → `users.media` → `bank_account` →
+         *     `id_verification` → `user_project` → `projects.document` →
+         *     `projects.media` → `token` → `project` → `user`
+         *
+         *     The `admin` table and `schema_migrations` are **not** touched.
+         *     The `uploads/projects/` and `uploads/users/` directories are also removed.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Reset completed */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @example all data reset; admins and migrations preserved */
+                            message?: string;
+                        };
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["UnauthorizedErrorResponse"];
+                    };
+                };
+                /** @description Admin access required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ForbiddenErrorResponse"];
+                    };
+                };
+                /** @description Internal server error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["InternalServerErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/test/generate-data": {
         parameters: {
             query?: never;
@@ -6152,6 +6374,8 @@ export interface components {
          *     Client should check the 'status' field and redirect user based on 'user_status':
          *     - 'no_info': redirect to complete profile
          *     - 'no_password': redirect to register password
+         *     - 'not_active': user account has been deactivated by admin
+         *     - 'not_verified': user identity verification is pending admin approval
          *     - Other mismatches: show permission denied message
          */
         UserStatusErrorResponse: {
@@ -6166,16 +6390,60 @@ export interface components {
              * @example no_info
              * @enum {string}
              */
-            user_status: "no_info" | "no_password" | "active";
+            user_status: "no_info" | "no_password" | "active" | "not_active" | "not_verified";
             /**
              * @description Required user status to access this resource
              * @example active
              * @enum {string}
              */
-            required_status: "no_info" | "no_password" | "active";
+            required_status: "no_info" | "no_password" | "active" | "not_active" | "not_verified";
             /**
              * @description Human-readable error message
              * @example profile information required
+             */
+            message: string;
+        };
+        /**
+         * @description Returned when the user account is blocked by the admin. Two distinct HTTP status codes are used:
+         *     - HTTP 403 Forbidden + user_status "not_active": account deactivated — message: "user is not active"
+         *     - HTTP 423 Locked  + user_status "not_verified": pending identity verification — message: "user verification is pending"
+         */
+        UserBlockedErrorResponse: {
+            /**
+             * @example error
+             * @enum {string}
+             */
+            status: "error";
+            /**
+             * @description The blocking status of the user
+             * @example not_active
+             * @enum {string}
+             */
+            user_status: "not_active" | "not_verified";
+            /**
+             * @description Human-readable reason for the block
+             * @example user is not active
+             */
+            message: string;
+        };
+        /**
+         * @description Returned with HTTP 409 Conflict when a unique constraint is violated.
+         *     Possible values for 'field': "national code", "serial number", "sheba number", "mobile number"
+         */
+        DuplicateFieldErrorResponse: {
+            /**
+             * @description Short error label
+             * @example duplicate value
+             */
+            error: string;
+            /**
+             * @description The user-friendly field name that caused the conflict
+             * @example serial number
+             */
+            field: string;
+            /**
+             * @description Human-readable conflict message
+             * @example serial number already exists
              */
             message: string;
         };
@@ -6336,7 +6604,7 @@ export interface components {
              * @example active
              * @enum {string}
              */
-            status: "no_info" | "no_password" | "active";
+            status: "no_info" | "no_password" | "active" | "not_active" | "not_verified";
             /** @description ID verification status for both photo and video uploads */
             id_verification: {
                 photo?: {
@@ -6546,6 +6814,26 @@ export interface components {
             options?: ("warehouse" | "heating_system" | "cooling_system" | "elevator" | "no_elevator_required")[] | null;
             description?: string | null;
             contractor?: string | null;
+            /**
+             * @description قیمت فروش هر متر ملک - Sale price per square meter of property
+             * @default 0
+             */
+            sale_price_per_meter: string;
+            /**
+             * @description قیمت هر توکن به تومان - Price per token in Toman
+             * @default 0
+             */
+            token_price_toman: string;
+            /**
+             * @description قیمت هر متر به توکن - Price per meter in tokens
+             * @default 0
+             */
+            price_per_meter_token: string;
+            /**
+             * @description درصد سود پیش بینی پروژه - Estimated project profit percentage
+             * @default 0
+             */
+            estimated_profit_percentage: string;
             /**
              * Format: int64
              * @description ID of the associated token (one-to-one relationship)
@@ -6858,7 +7146,7 @@ export interface components {
         UserDataResponse: {
             user: components["schemas"]["UserResponse"];
             /** @enum {string} */
-            status: "no_info" | "no_password" | "active";
+            status: "no_info" | "no_password" | "active" | "not_active" | "not_verified";
             /** @description ID verification status for both photo and video uploads */
             id_verification: {
                 photo?: {
