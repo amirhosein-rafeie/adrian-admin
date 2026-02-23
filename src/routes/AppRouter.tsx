@@ -5,6 +5,7 @@ import { LoginPage } from '@/features/auth/LoginPage';
 import { BanksPage } from '@/features/banks/BanksPage';
 import { DashboardPage } from '@/features/dashboard/DashboardPage';
 import { OrdersPage } from '@/features/orders/OrdersPage';
+import { ProjectCreatePage } from '@/features/projects/ProjectCreatePage';
 import { ProjectsPage } from '@/features/projects/ProjectsPage';
 import { TokensPage } from '@/features/tokens/TokensPage';
 import { TransactionsPage } from '@/features/transactions/TransactionsPage';
@@ -26,6 +27,7 @@ export const AppRouter = () => (
         >
           <Route path="/" element={<DashboardPage />} />
           <Route path="/projects" element={<ProjectsPage />} />
+          <Route path="/projects/create" element={<ProjectCreatePage />} />
           <Route path="/tokens" element={<TokensPage />} />
           <Route path="/transactions" element={<TransactionsPage />} />
           <Route path="/banks" element={<BanksPage />} />
