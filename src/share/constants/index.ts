@@ -6,3 +6,6 @@ export const TOKENS_LIST = 'tokens';
 export const TRANSACTIONS_LIST = 'transactions';
 export const ORDERS_LIST = 'orders';
 export const BANKS_LIST = 'banks';
+
+export const USERS_LIST = 'users';
+export const VERIFICATIONS_LIST = 'verifications';
