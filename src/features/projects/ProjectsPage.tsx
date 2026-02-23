@@ -1,4 +1,4 @@
-import { Button, Dialog, DialogContent, DialogTitle, MenuItem, Stack, TextField, Typography } from '@mui/material';
+import { Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, Divider, Grid, Link, MenuItem, Stack, TextField, Typography } from '@mui/material';
 import { GridColDef, GridPaginationModel } from '@mui/x-data-grid';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
@@ -10,8 +10,10 @@ import { PageHeader } from '@/components/PageHeader';
 import { StatusChip } from '@/components/StatusChip';
 import { useSnackbar } from '@/hooks/useSnackbar';
 import { queryClient } from '@/services/queryClient';
-import type { get200AdminProjectsResponseJson, getAdminProjectsQueryParams } from '@/share/utils/api/__generated__/types';
+import type { components } from '@/share/utils/api/__generated__/custom';
+import type { get200AdminProjectsResponseJson, get200AdminProjectsIdResponseJson, getAdminProjectsQueryParams } from '@/share/utils/api/__generated__/types';
 import { PROJECTS_LIST } from '@/share/constants';
+import { gregorianToJalali } from '@/share/utils/jalaliDate';
 import { clientRequest } from '@/share/utils/api/clientRequest';
 
 type ProjectRow = {
@@ -29,7 +31,7 @@ export const ProjectsPage = () => {
   const [status, setStatus] = useState<'all' | 'processing' | 'finished'>('all');
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({ page: 0, pageSize: 10 });
   const [confirmId, setConfirmId] = useState<number | null>(null);
-  const [detail, setDetail] = useState<any | null>(null);
+  const [detail, setDetail] = useState<get200AdminProjectsIdResponseJson | null>(null);
   const navigate = useNavigate();
   const { notify } = useSnackbar();
 
@@ -88,7 +90,7 @@ export const ProjectsPage = () => {
         <Stack direction="row" spacing={1}>
           <Button size="small" onClick={async () => {
             const res = await clientRequest.GET('/admin/projects/{id}', { params: { path: { id: p.row.id } } });
-            setDetail((res.data as any)?.project ?? null);
+            setDetail((res.data as get200AdminProjectsIdResponseJson) ?? null);
           }}>مشاهده</Button>
           <Button size="small" onClick={() => navigate(`/projects/${p.row.id}/edit`)}>ویرایش</Button>
           <Button size="small" color="error" onClick={() => setConfirmId(p.row.id)}>حذف</Button>
@@ -123,11 +125,90 @@ export const ProjectsPage = () => {
       <Dialog open={!!detail} onClose={() => setDetail(null)} fullWidth maxWidth="sm">
         <DialogTitle>جزئیات پروژه</DialogTitle>
         <DialogContent>
-          <Stack spacing={1} mt={1}>
-            {detail ? Object.entries(detail).map(([key, value]) => <Typography key={key}><strong>{key}:</strong> {typeof value === 'object' ? JSON.stringify(value) : String(value)}</Typography>) : null}
-          </Stack>
+          {detail ? <ProjectDetailsContent detail={detail} /> : null}
         </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDetail(null)}>بستن</Button>
+        </DialogActions>
       </Dialog>
     </>
+  );
+};
+
+const optionLabels: Record<string, string> = {
+  warehouse: 'انباری',
+  heating_system: 'سیستم گرمایش',
+  cooling_system: 'سیستم سرمایش',
+  elevator: 'آسانسور',
+  no_elevator_required: 'بدون نیاز به آسانسور'
+};
+
+const mediaTypeLabels: Record<components['schemas']['ProjectMedia']['media_type'], string> = {
+  img: 'تصویر',
+  pdf: 'PDF',
+  video: 'ویدئو'
+};
+
+const DetailItem = ({ label, value }: { label: string; value?: string | number | null }) => (
+  <Box>
+    <Typography variant="caption" color="text.secondary">{label}</Typography>
+    <Typography variant="body2">{value ?? '-'}</Typography>
+  </Box>
+);
+
+const ProjectDetailsContent = ({ detail }: { detail: get200AdminProjectsIdResponseJson }) => {
+  const project = detail.project;
+
+  return (
+    <Stack spacing={2} mt={1}>
+      <Stack spacing={0.5}>
+        <Typography variant="h6">{project.name}</Typography>
+        <Stack direction="row" spacing={1} alignItems="center">
+          <StatusChip status={project.status} />
+          <Typography variant="caption" color="text.secondary">شناسه: {project.id}</Typography>
+        </Stack>
+      </Stack>
+
+      <Grid container spacing={2}>
+        <Grid item xs={12} sm={6}><DetailItem label="نام توکن" value={project.token_name} /></Grid>
+        <Grid item xs={12} sm={6}><DetailItem label="قیمت" value={project.price} /></Grid>
+        <Grid item xs={12} sm={6}><DetailItem label="واحد قیمت" value={project.price_currency} /></Grid>
+        <Grid item xs={12} sm={6}><DetailItem label="پیمانکار" value={project.contractor} /></Grid>
+        <Grid item xs={12} sm={6}><DetailItem label="تعداد توکن" value={project.token_count} /></Grid>
+        <Grid item xs={12} sm={6}><DetailItem label="توکن فروخته‌شده" value={project.token_sold} /></Grid>
+        <Grid item xs={12} sm={6}><DetailItem label="تاریخ شروع" value={gregorianToJalali(project.start_time)} /></Grid>
+        <Grid item xs={12} sm={6}><DetailItem label="ددلاین" value={gregorianToJalali(project.dead_line)} /></Grid>
+      </Grid>
+
+      <Divider />
+
+      <DetailItem label="موقعیت" value={project.location} />
+      <DetailItem label="آدرس" value={project.address} />
+      <DetailItem label="توضیحات" value={project.description} />
+
+      <Box>
+        <Typography variant="caption" color="text.secondary">امکانات</Typography>
+        <Stack direction="row" spacing={1} mt={0.5} flexWrap="wrap" useFlexGap>
+          {project.options?.length ? project.options.map((option) => <Chip key={option} size="small" label={optionLabels[option] ?? option} />) : <Typography variant="body2">-</Typography>}
+        </Stack>
+      </Box>
+
+      <Divider />
+
+      <Box>
+        <Typography variant="subtitle2" gutterBottom>مدیا</Typography>
+        <Stack spacing={1}>
+          {detail.media.length ? detail.media.map((media) => (
+            <Stack key={media.id} direction="row" justifyContent="space-between" alignItems="center" sx={{ border: 1, borderColor: 'divider', borderRadius: 1, p: 1 }}>
+              <Stack>
+                <Typography variant="body2">{media.name}</Typography>
+                <Typography variant="caption" color="text.secondary">{mediaTypeLabels[media.media_type]} • {gregorianToJalali(media.created_at)}</Typography>
+              </Stack>
+              <Link href={media.path} target="_blank" rel="noreferrer" underline="hover">مشاهده فایل</Link>
+            </Stack>
+          )) : <Typography variant="body2">فایلی ثبت نشده است.</Typography>}
+        </Stack>
+      </Box>
+    </Stack>
   );
 };
