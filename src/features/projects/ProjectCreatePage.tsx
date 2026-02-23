@@ -31,7 +31,7 @@ type FormValues = z.infer<typeof schema>;
 type MediaType = 'img' | 'video' | 'pdf';
 type MediaPreview = { file: File; url: string };
 
-const steps = ['ایجاد پروژه + انتخاب لوکیشن و تصاویر', 'افزودن مدیا به پروژه'];
+const steps = ['اطلاعات پایه پروژه', 'افزودن مدیا به پروژه'];
 
 const parseLocation = (value: string): { lat: number; lng: number } | null => {
   const [latRaw, lngRaw] = value.trim().split(/\s+/);
@@ -46,7 +46,7 @@ const MapLocationPicker = ({ value, onChange }: { value: string; onChange: (valu
   const mapRef = useRef<any>(null);
   const markerRef = useRef<any>(null);
 
-  const fallback = parseLocation(value) ?? { lat: 35.6892, lng: 51.3890 };
+  const fallback = parseLocation(value) ?? { lat: 35.6892, lng: 51.389 };
 
   useEffect(() => {
     let mounted = true;
@@ -72,7 +72,6 @@ const MapLocationPicker = ({ value, onChange }: { value: string; onChange: (valu
       if (!mounted || !(window as any).L) return;
 
       const L = (window as any).L;
-
       mapRef.current = L.map(mapElementRef.current).setView([fallback.lat, fallback.lng], 13);
 
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -81,7 +80,6 @@ const MapLocationPicker = ({ value, onChange }: { value: string; onChange: (valu
       }).addTo(mapRef.current);
 
       markerRef.current = L.marker([fallback.lat, fallback.lng]).addTo(mapRef.current);
-
       mapRef.current.on('click', (event: any) => {
         const { lat, lng } = event.latlng;
         markerRef.current.setLatLng([lat, lng]);
@@ -93,9 +91,7 @@ const MapLocationPicker = ({ value, onChange }: { value: string; onChange: (valu
 
     return () => {
       mounted = false;
-      if (mapRef.current) {
-        mapRef.current.remove();
-      }
+      if (mapRef.current) mapRef.current.remove();
       mapRef.current = null;
       markerRef.current = null;
     };
@@ -104,7 +100,6 @@ const MapLocationPicker = ({ value, onChange }: { value: string; onChange: (valu
   useEffect(() => {
     const parsed = parseLocation(value);
     if (!parsed || !mapRef.current || !markerRef.current) return;
-
     markerRef.current.setLatLng([parsed.lat, parsed.lng]);
     mapRef.current.setView([parsed.lat, parsed.lng], mapRef.current.getZoom());
   }, [value]);
@@ -113,7 +108,7 @@ const MapLocationPicker = ({ value, onChange }: { value: string; onChange: (valu
     <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
       <Stack spacing={1.5}>
         <Typography variant="subtitle1" fontWeight={700}>انتخاب لوکیشن روی نقشه</Typography>
-        <Typography variant="caption" color="text.secondary">روی نقشه کلیک کنید تا مختصات ثبت شود.</Typography>
+        <Typography variant="caption" color="text.secondary">روی نقشه کلیک کنید تا مختصات در فرم ثبت شود.</Typography>
         <Box ref={mapElementRef} sx={{ width: '100%', height: 320, borderRadius: 1, overflow: 'hidden' }} />
       </Stack>
     </Paper>
@@ -200,22 +195,16 @@ export const ProjectCreatePage = () => {
   });
 
   const locationValue = form.watch('location');
-
   const imagePreviews = useMemo(() => mediaFiles.img.map((file) => ({ file, url: URL.createObjectURL(file) })), [mediaFiles.img]);
   const videoPreviews = useMemo(() => mediaFiles.video.map((file) => ({ file, url: URL.createObjectURL(file) })), [mediaFiles.video]);
 
-  useEffect(() => {
-    return () => {
-      imagePreviews.forEach((item) => URL.revokeObjectURL(item.url));
-      videoPreviews.forEach((item) => URL.revokeObjectURL(item.url));
-    };
+  useEffect(() => () => {
+    imagePreviews.forEach((item) => URL.revokeObjectURL(item.url));
+    videoPreviews.forEach((item) => URL.revokeObjectURL(item.url));
   }, [imagePreviews, videoPreviews]);
 
   const createMutation = useMutation({
-    mutationFn: (values: postAdminProjectsRequestBodyJson) =>
-      clientRequest.POST('/admin/projects', {
-        body: values
-      })
+    mutationFn: (values: postAdminProjectsRequestBodyJson) => clientRequest.POST('/admin/projects', { body: values })
   });
 
   const uploadMediaMutation = useMutation({
@@ -227,29 +216,22 @@ export const ProjectCreatePage = () => {
   });
 
   const handleMediaChange = (type: MediaType, files: FileList | null) => {
-    setMediaFiles((prev) => ({
-      ...prev,
-      [type]: files ? Array.from(files) : []
-    }));
+    setMediaFiles((prev) => ({ ...prev, [type]: files ? Array.from(files) : [] }));
   };
 
   const handleRemoveMedia = (type: MediaType, fileName: string) => {
-    setMediaFiles((prev) => ({
-      ...prev,
-      [type]: prev[type].filter((file) => file.name !== fileName)
-    }));
+    setMediaFiles((prev) => ({ ...prev, [type]: prev[type].filter((file) => file.name !== fileName) }));
   };
 
   const handleCreateProject = form.handleSubmit(async (values) => {
     try {
       const createResult = (await createMutation.mutateAsync(values)) as { data?: { id?: number } };
       const projectId = createResult.data?.id;
-
       if (!projectId) throw new Error('شناسه پروژه از سرور دریافت نشد');
 
       setCreatedProjectId(projectId);
       setActiveStep(1);
-      notify('پروژه ایجاد شد، حالا مدیا را اضافه کنید');
+      notify('پروژه ایجاد شد، حالا مدیاها را اضافه کنید');
     } catch (error) {
       notify((error as Error).message, 'error');
     }
@@ -260,16 +242,11 @@ export const ProjectCreatePage = () => {
       if (!createdProjectId) throw new Error('ابتدا پروژه را ایجاد کنید');
 
       const uploadOrder: MediaType[] = ['img', 'video', 'pdf'];
-
       for (const mediaType of uploadOrder) {
         for (const file of mediaFiles[mediaType]) {
           await uploadMediaMutation.mutateAsync({
             projectId: createdProjectId,
-            body: {
-              file: file as unknown as string,
-              media_type: mediaType,
-              name: file.name
-            }
+            body: { file: file as unknown as string, media_type: mediaType, name: file.name }
           });
         }
       }
@@ -284,7 +261,7 @@ export const ProjectCreatePage = () => {
 
   return (
     <>
-      <PageHeader title="ایجاد پروژه" subtitle="اول پروژه ساخته می‌شود، سپس مدیاها به آن اضافه می‌شوند" />
+      <PageHeader title="ایجاد پروژه" subtitle="اول پروژه ساخته می‌شود، سپس همه مدیاها (عکس/ویدیو/PDF) به آن اضافه می‌شوند" />
       <Card>
         <CardContent>
           <Stack spacing={3}>
@@ -297,38 +274,61 @@ export const ProjectCreatePage = () => {
             </Stepper>
 
             {activeStep === 0 && (
-              <Stack spacing={2} component="form" onSubmit={handleCreateProject}>
-                <TextField label="نام پروژه" {...form.register('name')} error={!!form.formState.errors.name} helperText={form.formState.errors.name?.message} />
-                <TextField label="توضیحات" {...form.register('description')} error={!!form.formState.errors.description} helperText={form.formState.errors.description?.message} multiline minRows={2} />
-                <TextField select label="وضعیت" {...form.register('status')}>
-                  <MenuItem value="processing">در حال پردازش</MenuItem>
-                  <MenuItem value="finished">تکمیل‌شده</MenuItem>
-                </TextField>
-                <TextField label="آدرس" {...form.register('address')} error={!!form.formState.errors.address} helperText={form.formState.errors.address?.message} />
-                <TextField label="قیمت" {...form.register('price')} error={!!form.formState.errors.price} helperText={form.formState.errors.price?.message} />
-                <TextField label="واحد قیمت" {...form.register('price_currency')} error={!!form.formState.errors.price_currency} helperText={form.formState.errors.price_currency?.message} />
-                <TextField type="number" label="تعداد توکن" {...form.register('token_count')} error={!!form.formState.errors.token_count} helperText={form.formState.errors.token_count?.message} />
-                <TextField label="نام توکن" {...form.register('token_name')} error={!!form.formState.errors.token_name} helperText={form.formState.errors.token_name?.message} />
-                <TextField type="date" label="تاریخ شروع" {...form.register('start_time')} error={!!form.formState.errors.start_time} helperText={form.formState.errors.start_time?.message} InputLabelProps={{ shrink: true }} />
-                <TextField type="date" label="ددلاین" {...form.register('dead_line')} error={!!form.formState.errors.dead_line} helperText={form.formState.errors.dead_line?.message} InputLabelProps={{ shrink: true }} />
-                <TextField label="پیمانکار" {...form.register('contractor')} error={!!form.formState.errors.contractor} helperText={form.formState.errors.contractor?.message} />
-                <TextField
-                  label="مختصات (lat lng)"
-                  value={locationValue}
-                  onChange={(event) => form.setValue('location', event.target.value, { shouldValidate: true })}
-                  error={!!form.formState.errors.location}
-                  helperText={form.formState.errors.location?.message ?? 'روی نقشه کلیک کنید یا دستی وارد کنید'}
-                />
+              <Stack spacing={3} component="form" onSubmit={handleCreateProject}>
+                <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                  <Stack spacing={2}>
+                    <Typography variant="subtitle1" fontWeight={700}>اطلاعات پایه</Typography>
+                    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
+                      <TextField label="نام پروژه" {...form.register('name')} error={!!form.formState.errors.name} helperText={form.formState.errors.name?.message} />
+                      <TextField select label="وضعیت" {...form.register('status')}>
+                        <MenuItem value="processing">در حال پردازش</MenuItem>
+                        <MenuItem value="finished">تکمیل‌شده</MenuItem>
+                      </TextField>
+                      <TextField label="آدرس" {...form.register('address')} error={!!form.formState.errors.address} helperText={form.formState.errors.address?.message} />
+                      <TextField label="پیمانکار" {...form.register('contractor')} error={!!form.formState.errors.contractor} helperText={form.formState.errors.contractor?.message} />
+                      <TextField label="قیمت" {...form.register('price')} error={!!form.formState.errors.price} helperText={form.formState.errors.price?.message} />
+                      <TextField label="واحد قیمت" {...form.register('price_currency')} error={!!form.formState.errors.price_currency} helperText={form.formState.errors.price_currency?.message} />
+                      <TextField type="number" label="تعداد توکن" {...form.register('token_count')} error={!!form.formState.errors.token_count} helperText={form.formState.errors.token_count?.message} />
+                      <TextField label="نام توکن" {...form.register('token_name')} error={!!form.formState.errors.token_name} helperText={form.formState.errors.token_name?.message} />
+                      <TextField type="date" label="تاریخ شروع" {...form.register('start_time')} error={!!form.formState.errors.start_time} helperText={form.formState.errors.start_time?.message} InputLabelProps={{ shrink: true }} />
+                      <TextField type="date" label="ددلاین" {...form.register('dead_line')} error={!!form.formState.errors.dead_line} helperText={form.formState.errors.dead_line?.message} InputLabelProps={{ shrink: true }} />
+                    </Box>
+                    <TextField label="توضیحات" {...form.register('description')} error={!!form.formState.errors.description} helperText={form.formState.errors.description?.message} multiline minRows={3} />
+                  </Stack>
+                </Paper>
 
-                <MapLocationPicker
-                  value={locationValue}
-                  onChange={(value) => form.setValue('location', value, { shouldValidate: true, shouldDirty: true })}
-                />
+                <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                  <Stack spacing={2}>
+                    <Typography variant="subtitle1" fontWeight={700}>لوکیشن پروژه</Typography>
+                    <TextField
+                      label="مختصات (lat lng)"
+                      value={locationValue}
+                      onChange={(event) => form.setValue('location', event.target.value, { shouldValidate: true })}
+                      error={!!form.formState.errors.location}
+                      helperText={form.formState.errors.location?.message ?? 'روی نقشه کلیک کنید یا دستی وارد کنید'}
+                    />
+                    <MapLocationPicker
+                      value={locationValue}
+                      onChange={(value) => form.setValue('location', value, { shouldValidate: true, shouldDirty: true })}
+                    />
+                  </Stack>
+                </Paper>
 
-                <Divider textAlign="right">تصاویر پروژه</Divider>
+                <Stack direction="row" spacing={1} justifyContent="space-between">
+                  <Button variant="outlined" onClick={() => navigate('/projects')}>انصراف</Button>
+                  <Button type="submit" variant="contained" disabled={createMutation.isPending}>ایجاد پروژه و رفتن به استپ مدیا</Button>
+                </Stack>
+              </Stack>
+            )}
+
+            {activeStep === 1 && (
+              <Stack spacing={2}>
+                <Chip color="success" label={`پروژه با شناسه ${createdProjectId} ایجاد شد`} sx={{ alignSelf: 'flex-start' }} />
+                <Divider textAlign="right">افزودن مدیا به پروژه</Divider>
+
                 <MediaUploadSection
                   title="تصاویر پروژه"
-                  helperText="تصاویر الان انتخاب می‌شوند و بعد از ایجاد پروژه، روی آن ثبت می‌شوند."
+                  helperText="عکس‌ها در این مرحله اضافه می‌شوند."
                   accept="image/*"
                   mediaType="img"
                   files={imagePreviews}
@@ -339,18 +339,6 @@ export const ProjectCreatePage = () => {
                   )}
                 />
 
-                <Stack direction="row" spacing={1} justifyContent="space-between">
-                  <Button variant="outlined" onClick={() => navigate('/projects')}>انصراف</Button>
-                  <Button type="submit" variant="contained" disabled={createMutation.isPending}>ایجاد پروژه و ادامه</Button>
-                </Stack>
-              </Stack>
-            )}
-
-            {activeStep === 1 && (
-              <Stack spacing={2}>
-                <Chip color="success" label={`پروژه با شناسه ${createdProjectId} ایجاد شد`} sx={{ alignSelf: 'flex-start' }} />
-
-                <Divider textAlign="right">افزودن مدیا به پروژه</Divider>
                 <MediaUploadSection
                   title="ویدیوهای پروژه"
                   helperText="فایل‌های ویدیویی را انتخاب کنید (پیش‌نمایش فعال است)."
@@ -366,7 +354,7 @@ export const ProjectCreatePage = () => {
 
                 <MediaUploadSection
                   title="PDFهای پروژه"
-                  helperText="PDFها پس از تصاویر و ویدیوها به پروژه اضافه می‌شوند."
+                  helperText="PDFها پس از عکس و ویدیو به پروژه اضافه می‌شوند."
                   accept="application/pdf"
                   mediaType="pdf"
                   files={mediaFiles.pdf.map((file) => ({ file, url: '' }))}
