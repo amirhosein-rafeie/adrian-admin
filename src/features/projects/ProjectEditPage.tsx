@@ -1,8 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import CalendarMonthRoundedIcon from '@mui/icons-material/CalendarMonthRounded';
-import { Box, Button, Card, CardContent, Checkbox, FormControlLabel, FormGroup, IconButton, InputAdornment, MenuItem, Stack, TextField, Typography } from '@mui/material';
+import { Box, Button, Card, CardContent, Checkbox, FormControlLabel, FormGroup, MenuItem, Stack, TextField, Typography } from '@mui/material';
 import { useMutation } from '@tanstack/react-query';
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { useNavigate, useParams } from 'react-router-dom';
 import { z } from 'zod';
@@ -13,6 +12,12 @@ import { queryClient } from '@/services/queryClient';
 import { PROJECTS_LIST } from '@/share/constants';
 import type { patchAdminProjectsIdRequestBodyJson } from '@/share/utils/api/__generated__/types';
 import { clientRequest } from '@/share/utils/api/clientRequest';
+import { gregorianToJalali, jalaliToGregorian } from '@/share/utils/jalaliDate';
+
+const optionalString = z.preprocess((value) => {
+  if (value === '' || value === null || value === undefined) return undefined;
+  return value;
+}, z.string().optional());
 
 const schema = z.object({
   name: z.string().min(2, 'حداقل ۲ کاراکتر وارد کنید'),
@@ -24,13 +29,23 @@ const schema = z.object({
   price_currency: z.string().min(1, 'واحد قیمت الزامی است'),
   token_count: z.coerce.number().min(1, 'تعداد توکن باید حداقل ۱ باشد'),
   token_name: z.string().min(2, 'نام توکن الزامی است'),
-  start_time: z.string().min(1, 'تاریخ شروع الزامی است'),
-  dead_line: z.string().min(1, 'ددلاین الزامی است'),
+  sale_price_per_meter: optionalString,
+  token_price_toman: optionalString,
+  price_per_meter_token: optionalString,
+  estimated_profit_percentage: optionalString,
+  start_time: z.string().min(1, 'تاریخ شروع الزامی است').refine((value) => Boolean(jalaliToGregorian(value)), 'فرمت تاریخ شروع معتبر نیست'),
+  dead_line: z.string().min(1, 'ددلاین الزامی است').refine((value) => Boolean(jalaliToGregorian(value)), 'فرمت ددلاین معتبر نیست'),
   contractor: z.string().optional(),
   options: z.array(z.enum(['warehouse', 'heating_system', 'cooling_system', 'elevator', 'no_elevator_required'])).default([])
 });
 
 type FormValues = z.infer<typeof schema>;
+type ExtendedPatchPayload = patchAdminProjectsIdRequestBodyJson & {
+  sale_price_per_meter?: string | null;
+  token_price_toman?: string | null;
+  price_per_meter_token?: string | null;
+  estimated_profit_percentage?: string | null;
+};
 
 const projectOptions: { value: FormValues['options'][number]; label: string }[] = [
   { value: 'warehouse', label: 'انباری' },
@@ -40,18 +55,11 @@ const projectOptions: { value: FormValues['options'][number]; label: string }[] 
   { value: 'no_elevator_required', label: 'عدم نیاز به آسانسور' }
 ];
 
-const normalizeDate = (value?: string | null) => {
-  if (!value) return '';
-  return value.length >= 10 ? value.slice(0, 10) : value;
-};
-
 export const ProjectEditPage = () => {
   const { id } = useParams();
   const projectId = Number(id);
   const navigate = useNavigate();
   const { notify } = useSnackbar();
-  const startDateInputRef = useRef<HTMLInputElement | null>(null);
-  const deadlineInputRef = useRef<HTMLInputElement | null>(null);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -65,6 +73,10 @@ export const ProjectEditPage = () => {
       price_currency: 'IRR',
       token_count: 1,
       token_name: '',
+      sale_price_per_meter: '',
+      token_price_toman: '',
+      price_per_meter_token: '',
+      estimated_profit_percentage: '',
       start_time: '',
       dead_line: '',
       contractor: '',
@@ -88,24 +100,34 @@ export const ProjectEditPage = () => {
       price_currency: project.price_currency ?? 'IRR',
       token_count: Number(project.token_count ?? 1),
       token_name: project.token_name ?? '',
-      start_time: normalizeDate(project.start_time),
-      dead_line: normalizeDate(project.dead_line),
+      sale_price_per_meter: project.sale_price_per_meter ?? '',
+      token_price_toman: project.token_price_toman ?? '',
+      price_per_meter_token: project.price_per_meter_token ?? '',
+      estimated_profit_percentage: project.estimated_profit_percentage ?? '',
+      start_time: gregorianToJalali(project.start_time),
+      dead_line: gregorianToJalali(project.dead_line),
       contractor: project.contractor ?? '',
       options: Array.isArray(project.options) ? project.options : []
     });
   }, [data, form]);
 
   const updateMutation = useMutation({
-    mutationFn: (values: patchAdminProjectsIdRequestBodyJson) =>
+    mutationFn: (values: ExtendedPatchPayload) =>
       clientRequest.PATCH('/admin/projects/{id}', {
         params: { path: { id: projectId } },
-        body: values
+        body: values as patchAdminProjectsIdRequestBodyJson
       })
   });
 
   const onSubmit = form.handleSubmit(async (values) => {
     try {
-      await updateMutation.mutateAsync(values);
+      const payload = {
+        ...values,
+        start_time: jalaliToGregorian(values.start_time),
+        dead_line: jalaliToGregorian(values.dead_line)
+      };
+
+      await updateMutation.mutateAsync(payload);
       await queryClient.invalidateQueries({ queryKey: [PROJECTS_LIST] });
       notify('پروژه با موفقیت ویرایش شد');
       navigate('/projects');
@@ -132,31 +154,22 @@ export const ProjectEditPage = () => {
               <TextField label="واحد قیمت" {...form.register('price_currency')} error={!!form.formState.errors.price_currency} helperText={form.formState.errors.price_currency?.message} disabled={isPending} />
               <TextField type="number" label="تعداد توکن" {...form.register('token_count')} error={!!form.formState.errors.token_count} helperText={form.formState.errors.token_count?.message} disabled={isPending} />
               <TextField label="نام توکن" {...form.register('token_name')} error={!!form.formState.errors.token_name} helperText={form.formState.errors.token_name?.message} disabled={isPending} />
+              <TextField label="قیمت فروش هر متر ملک" {...form.register('sale_price_per_meter')} error={!!form.formState.errors.sale_price_per_meter} helperText={form.formState.errors.sale_price_per_meter?.message ?? 'اختیاری'} disabled={isPending} />
+              <TextField label="قیمت هر توکن (تومان)" {...form.register('token_price_toman')} error={!!form.formState.errors.token_price_toman} helperText={form.formState.errors.token_price_toman?.message ?? 'اختیاری'} disabled={isPending} />
+              <TextField label="قیمت هر متر به توکن" {...form.register('price_per_meter_token')} error={!!form.formState.errors.price_per_meter_token} helperText={form.formState.errors.price_per_meter_token?.message ?? 'اختیاری'} disabled={isPending} />
+              <TextField label="درصد سود پیش‌بینی‌شده" {...form.register('estimated_profit_percentage')} error={!!form.formState.errors.estimated_profit_percentage} helperText={form.formState.errors.estimated_profit_percentage?.message ?? 'اختیاری'} disabled={isPending} />
               <Controller
                 name="start_time"
                 control={form.control}
                 render={({ field }) => (
                   <TextField
                     {...field}
-                    inputRef={(element) => {
-                      field.ref(element);
-                      startDateInputRef.current = element;
-                    }}
-                    type="date"
-                    label="تاریخ شروع"
+                    label="تاریخ شروع (شمسی)"
+                    placeholder="۱۴۰۴/۰۱/۱۵"
                     error={!!form.formState.errors.start_time}
-                    helperText={form.formState.errors.start_time?.message}
-                    InputLabelProps={{ shrink: true }}
+                    helperText={form.formState.errors.start_time?.message ?? 'فرمت: YYYY/MM/DD'}
                     disabled={isPending}
-                    InputProps={{
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <IconButton edge="end" onClick={() => startDateInputRef.current?.showPicker?.()} aria-label="بازکردن تقویم تاریخ شروع">
-                            <CalendarMonthRoundedIcon fontSize="small" />
-                          </IconButton>
-                        </InputAdornment>
-                      )
-                    }}
+                    inputProps={{ dir: 'ltr' }}
                   />
                 )}
               />
@@ -166,25 +179,12 @@ export const ProjectEditPage = () => {
                 render={({ field }) => (
                   <TextField
                     {...field}
-                    inputRef={(element) => {
-                      field.ref(element);
-                      deadlineInputRef.current = element;
-                    }}
-                    type="date"
-                    label="ددلاین"
+                    label="ددلاین (شمسی)"
+                    placeholder="۱۴۰۴/۱۲/۲۹"
                     error={!!form.formState.errors.dead_line}
-                    helperText={form.formState.errors.dead_line?.message}
-                    InputLabelProps={{ shrink: true }}
+                    helperText={form.formState.errors.dead_line?.message ?? 'فرمت: YYYY/MM/DD'}
                     disabled={isPending}
-                    InputProps={{
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <IconButton edge="end" onClick={() => deadlineInputRef.current?.showPicker?.()} aria-label="بازکردن تقویم ددلاین">
-                            <CalendarMonthRoundedIcon fontSize="small" />
-                          </IconButton>
-                        </InputAdornment>
-                      )
-                    }}
+                    inputProps={{ dir: 'ltr' }}
                   />
                 )}
               />
