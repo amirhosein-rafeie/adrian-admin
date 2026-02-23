@@ -1,8 +1,9 @@
-import { Drawer, MenuItem, Stack, TextField, Typography } from '@mui/material';
+import { Chip, Drawer, MenuItem, Paper, Stack, TextField, Typography } from '@mui/material';
 import { GridColDef, GridPaginationModel } from '@mui/x-data-grid';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { DataTable } from '@/components/DataTable';
+import { DetailKeyValueList } from '@/components/DetailKeyValueList';
 import { PageHeader } from '@/components/PageHeader';
 import { StatusChip } from '@/components/StatusChip';
 import { useSnackbar } from '@/hooks/useSnackbar';
@@ -115,9 +116,16 @@ export const OrdersPage = () => {
         onPaginationModelChange={setPaginationModel}
       />
       <Drawer anchor="right" open={!!drawer} onClose={() => setDrawer(null)} ModalProps={{ disableScrollLock: true }}>
-        <Stack p={3} spacing={2} width={340}>
+        <Stack p={2.5} spacing={2} width={{ xs: 360, md: 520 }}>
           <Typography variant="h6">جزئیات سفارش</Typography>
-          {drawer ? Object.entries(drawer).map(([k, v]) => <Typography key={k}><strong>{k}:</strong> {typeof v === 'object' ? JSON.stringify(v) : String(v)}</Typography>) : null}
+          <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 2 }}>
+            <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+              <Chip label={`شناسه سفارش: ${drawer?.id ?? '-'}`} />
+              <Chip label={`کاربر: ${drawer?.user_id ?? '-'}`} />
+              <Chip label={`وضعیت: ${drawer?.status ?? '-'}`} color={drawer?.status === 'verified' ? 'success' : drawer?.status === 'failed' ? 'error' : 'default'} />
+            </Stack>
+          </Paper>
+          <DetailKeyValueList data={drawer} />
         </Stack>
       </Drawer>
     </>

@@ -5,6 +5,7 @@ import { ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
+import { JalaliDateField } from '@/components/JalaliDateField';
 import { PageHeader } from '@/components/PageHeader';
 import { useSnackbar } from '@/hooks/useSnackbar';
 import { queryClient } from '@/services/queryClient';
@@ -348,7 +349,7 @@ export const ProjectCreatePage = () => {
                         name="start_time"
                         control={form.control}
                         render={({ field }) => (
-                          <TextField
+                          <JalaliDateField
                             {...field}
                             label="تاریخ شروع (شمسی)"
                             placeholder="۱۴۰۴/۰۱/۱۵"
@@ -362,7 +363,7 @@ export const ProjectCreatePage = () => {
                         name="dead_line"
                         control={form.control}
                         render={({ field }) => (
-                          <TextField
+                          <JalaliDateField
                             {...field}
                             label="ددلاین (شمسی)"
                             placeholder="۱۴۰۴/۱۲/۲۹"
