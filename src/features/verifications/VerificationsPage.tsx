@@ -1,4 +1,4 @@
-import { Button, Drawer, MenuItem, Stack, TextField, Typography } from '@mui/material';
+import { Button, Chip, Divider, Drawer, MenuItem, Paper, Stack, TextField, Typography } from '@mui/material';
 import { GridColDef, GridPaginationModel } from '@mui/x-data-grid';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
@@ -22,6 +22,20 @@ type VerificationRow = NonNullable<get200AdminVerificationsResponseJson['verific
 const verificationTypeLabel: Record<string, string> = {
   id_card_photo: 'کارت ملی',
   id_card_video: 'ویدیو'
+};
+
+const renderDocumentPreview = (fileUrl: string, verificationType?: string) => {
+  if (!fileUrl) return <Typography color="text.secondary">فایل مدرک موجود نیست.</Typography>;
+
+  if (verificationType === 'id_card_video' || /\.(mp4|webm|mov|mkv)$/i.test(fileUrl)) {
+    return <Stack component="video" src={fileUrl} controls sx={{ width: '100%', maxHeight: 360, borderRadius: 1, backgroundColor: 'black' }} />;
+  }
+
+  if (/\.(pdf)$/i.test(fileUrl)) {
+    return <Stack component="iframe" src={fileUrl} sx={{ width: '100%', height: 420, border: 0, borderRadius: 1 }} />;
+  }
+
+  return <Stack component="img" src={fileUrl} alt="مدرک احراز هویت" sx={{ width: '100%', maxHeight: 420, objectFit: 'contain', borderRadius: 1 }} />;
 };
 
 export const VerificationsPage = () => {
@@ -91,9 +105,11 @@ export const VerificationsPage = () => {
     }
   ];
 
+  const drawerFileUrl = resolveApiFileUrl(drawer?.file_path);
+
   return (
     <>
-      <PageHeader title="احراز هویت کاربران" subtitle="مشاهده مدارک و تایید/رد با دلیل" />
+      <PageHeader title="احراز هویت کاربران" subtitle="مشاهده مدارک، پیش‌نمایش، تایید/رد با دلیل" />
       <Stack mb={2}>
         <TextField select label="فیلتر وضعیت" value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value as typeof statusFilter); setPaginationModel((prev) => ({ ...prev, page: 0 })); }} sx={{ width: 220 }}>
           <MenuItem value="all">همه</MenuItem>
@@ -113,15 +129,25 @@ export const VerificationsPage = () => {
       />
 
       <Drawer anchor="right" open={!!drawer} onClose={() => setDrawer(null)} ModalProps={{ disableScrollLock: true }}>
-        <Stack p={3} spacing={1.5} width={360}>
-          <Typography variant="h6">جزئیات احراز هویت</Typography>
-          <Typography>شناسه: {drawer?.id ?? '-'}</Typography>
-          <Typography>کاربر: {drawer?.user_id ?? '-'}</Typography>
-          <Typography>نوع: {verificationTypeLabel[drawer?.verification_type ?? ''] ?? drawer?.verification_type ?? '-'}</Typography>
-          <Typography>وضعیت: {drawer?.status ?? '-'}</Typography>
-          <Typography>دلیل رد: {drawer?.failure_reason ?? '-'}</Typography>
-          <Typography>فایل: {resolveApiFileUrl(drawer?.file_path) || '-'}</Typography>
-          {drawer?.file_path ? <Button href={resolveApiFileUrl(drawer.file_path)} target="_blank" rel="noreferrer" variant="outlined">مشاهده مدرک</Button> : null}
+        <Stack p={2.5} spacing={2} width={{ xs: 380, md: 560 }}>
+          <Typography variant="h6">جزئیات و پیش‌نمایش مدرک</Typography>
+
+          <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+            <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap" mb={1.5}>
+              <Chip label={`شناسه: ${drawer?.id ?? '-'}`} />
+              <Chip label={`کاربر: ${drawer?.user_id ?? '-'}`} />
+              <Chip label={`نوع: ${verificationTypeLabel[drawer?.verification_type ?? ''] ?? drawer?.verification_type ?? '-'}`} />
+              <Chip label={`وضعیت: ${drawer?.status ?? '-'}`} color={drawer?.status === 'verified' ? 'success' : drawer?.status === 'failed' ? 'error' : 'default'} />
+            </Stack>
+            <Divider sx={{ mb: 1.5 }} />
+            <Typography variant="body2" color="text.secondary">دلیل رد: {drawer?.failure_reason ?? '-'}</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>لینک فایل: {drawerFileUrl || '-'}</Typography>
+            {drawerFileUrl ? <Button href={drawerFileUrl} target="_blank" rel="noreferrer" variant="outlined" size="small" sx={{ mt: 1 }}>بازکردن در تب جدید</Button> : null}
+          </Paper>
+
+          <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 2 }}>
+            {renderDocumentPreview(drawerFileUrl, drawer?.verification_type ?? undefined)}
+          </Paper>
         </Stack>
       </Drawer>
 
