@@ -5,6 +5,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { DataTable } from '@/components/DataTable';
+import { DetailKeyValueList } from '@/components/DetailKeyValueList';
 import { EmptyState } from '@/components/EmptyState';
 import { PageHeader } from '@/components/PageHeader';
 import { StatusChip } from '@/components/StatusChip';
@@ -123,8 +124,9 @@ export const ProjectsPage = () => {
       <Dialog open={!!detail} onClose={() => setDetail(null)} fullWidth maxWidth="sm">
         <DialogTitle>جزئیات پروژه</DialogTitle>
         <DialogContent>
-          <Stack spacing={1} mt={1}>
-            {detail ? Object.entries(detail).map(([key, value]) => <Typography key={key}><strong>{key}:</strong> {typeof value === 'object' ? JSON.stringify(value) : String(value)}</Typography>) : null}
+          <Stack spacing={1.5} mt={1}>
+            <Typography variant="body2" color="text.secondary">نمایش کامل اطلاعات پروژه انتخاب‌شده</Typography>
+            <DetailKeyValueList data={detail} />
           </Stack>
         </DialogContent>
       </Dialog>
