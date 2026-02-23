@@ -10,6 +10,8 @@ import { ProjectEditPage } from '@/features/projects/ProjectEditPage';
 import { ProjectsPage } from '@/features/projects/ProjectsPage';
 import { TokensPage } from '@/features/tokens/TokensPage';
 import { TransactionsPage } from '@/features/transactions/TransactionsPage';
+import { UsersPage } from '@/features/users/UsersPage';
+import { VerificationsPage } from '@/features/verifications/VerificationsPage';
 import { AdminLayout } from '@/layouts/AdminLayout';
 import { auth } from '@/services/auth';
 import { RoleGuard } from './RoleGuard';
@@ -34,6 +36,8 @@ export const AppRouter = () => (
           <Route path="/transactions" element={<TransactionsPage />} />
           <Route path="/banks" element={<BanksPage />} />
           <Route path="/orders" element={<OrdersPage />} />
+          <Route path="/users" element={<UsersPage />} />
+          <Route path="/verifications" element={<VerificationsPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

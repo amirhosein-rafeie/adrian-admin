@@ -18,6 +18,8 @@ import TokenIcon from '@mui/icons-material/Token';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import ShoppingBagIcon from '@mui/icons-material/ShoppingBag';
+import PeopleIcon from '@mui/icons-material/People';
+import BadgeIcon from '@mui/icons-material/Badge';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { auth } from '@/services/auth';
 
@@ -31,6 +33,8 @@ const navItems = [
   { label: 'تراکنش‌ها', path: '/transactions', icon: <ReceiptLongIcon /> },
   { label: 'حساب‌های بانکی', path: '/banks', icon: <AccountBalanceIcon /> },
   { label: 'سفارش‌ها', path: '/orders', icon: <ShoppingBagIcon /> },
+  { label: 'کاربران', path: '/users', icon: <PeopleIcon /> },
+  { label: 'احراز هویت', path: '/verifications', icon: <BadgeIcon /> },
 ];
 
 export const AdminLayout = () => {

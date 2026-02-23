@@ -1,4 +1,4 @@
-import { MenuItem, Stack, TextField } from '@mui/material';
+import { Drawer, MenuItem, Stack, TextField, Typography } from '@mui/material';
 import { GridColDef, GridPaginationModel } from '@mui/x-data-grid';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
@@ -19,6 +19,7 @@ type OrderRow = NonNullable<get200AdminOrdersResponseJson['orders']>[number];
 
 export const OrdersPage = () => {
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'verified' | 'failed'>('all');
+  const [drawer, setDrawer] = useState<any | null>(null);
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({ page: 0, pageSize: 10 });
   const { notify } = useSnackbar();
 
@@ -76,6 +77,20 @@ export const OrdersPage = () => {
       )
     },
     { field: 'status_chip', headerName: 'نشان', width: 110, sortable: false, renderCell: (p) => <StatusChip status={p.row.status} /> },
+    {
+      field: 'actions',
+      headerName: 'عملیات',
+      width: 110,
+      sortable: false,
+      renderCell: (p) => <TextField select size="small" value="actions" onChange={async (e) => {
+        if (e.target.value !== 'view') return;
+        const res = await clientRequest.GET('/admin/orders/{id}', { params: { path: { id: p.row.id } } });
+        setDrawer(res.data);
+      }}>
+        <MenuItem value="actions" disabled>عملیات</MenuItem>
+        <MenuItem value="view">مشاهده</MenuItem>
+      </TextField>
+    },
     { field: 'created_at', headerName: 'تاریخ ایجاد', width: 140 }
   ];
 
@@ -99,6 +114,12 @@ export const OrdersPage = () => {
         paginationModel={paginationModel}
         onPaginationModelChange={setPaginationModel}
       />
+      <Drawer anchor="right" open={!!drawer} onClose={() => setDrawer(null)} ModalProps={{ disableScrollLock: true }}>
+        <Stack p={3} spacing={2} width={340}>
+          <Typography variant="h6">جزئیات سفارش</Typography>
+          {drawer ? Object.entries(drawer).map(([k, v]) => <Typography key={k}><strong>{k}:</strong> {typeof v === 'object' ? JSON.stringify(v) : String(v)}</Typography>) : null}
+        </Stack>
+      </Drawer>
     </>
   );
 };

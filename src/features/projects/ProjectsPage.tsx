@@ -1,12 +1,15 @@
-import { Button, MenuItem, Stack, TextField } from '@mui/material';
+import { Button, Dialog, DialogContent, DialogTitle, MenuItem, Stack, TextField, Typography } from '@mui/material';
 import { GridColDef, GridPaginationModel } from '@mui/x-data-grid';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { DataTable } from '@/components/DataTable';
 import { EmptyState } from '@/components/EmptyState';
 import { PageHeader } from '@/components/PageHeader';
 import { StatusChip } from '@/components/StatusChip';
+import { useSnackbar } from '@/hooks/useSnackbar';
+import { queryClient } from '@/services/queryClient';
 import type { get200AdminProjectsResponseJson, getAdminProjectsQueryParams } from '@/share/utils/api/__generated__/types';
 import { PROJECTS_LIST } from '@/share/constants';
 import { clientRequest } from '@/share/utils/api/clientRequest';
@@ -25,7 +28,10 @@ export const ProjectsPage = () => {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<'all' | 'processing' | 'finished'>('all');
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({ page: 0, pageSize: 10 });
+  const [confirmId, setConfirmId] = useState<number | null>(null);
+  const [detail, setDetail] = useState<any | null>(null);
   const navigate = useNavigate();
+  const { notify } = useSnackbar();
 
   const query = useMemo<getAdminProjectsQueryParams>(
     () => ({
@@ -40,6 +46,15 @@ export const ProjectsPage = () => {
   const { data, isPending, isError } = useQuery({
     queryKey: [PROJECTS_LIST, query],
     queryFn: () => clientRequest.GET('/admin/projects', { params: { query } })
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => clientRequest.DELETE('/admin/projects/{id}', { params: { path: { id } } }),
+    onSuccess: () => {
+      notify('پروژه حذف شد');
+      queryClient.invalidateQueries({ queryKey: [PROJECTS_LIST] });
+      setConfirmId(null);
+    }
   });
 
   const responseData = data?.data as get200AdminProjectsResponseJson | undefined;
@@ -67,9 +82,18 @@ export const ProjectsPage = () => {
     {
       field: 'actions',
       headerName: 'عملیات',
-      width: 140,
+      width: 260,
       sortable: false,
-      renderCell: (p) => <Button size="small" onClick={() => navigate(`/projects/${p.row.id}/edit`)}>ویرایش</Button>
+      renderCell: (p) => (
+        <Stack direction="row" spacing={1}>
+          <Button size="small" onClick={async () => {
+            const res = await clientRequest.GET('/admin/projects/{id}', { params: { path: { id: p.row.id } } });
+            setDetail((res.data as any)?.project ?? null);
+          }}>مشاهده</Button>
+          <Button size="small" onClick={() => navigate(`/projects/${p.row.id}/edit`)}>ویرایش</Button>
+          <Button size="small" color="error" onClick={() => setConfirmId(p.row.id)}>حذف</Button>
+        </Stack>
+      )
     }
   ];
 
@@ -77,7 +101,7 @@ export const ProjectsPage = () => {
     <>
       <PageHeader
         title="پروژه‌ها"
-        subtitle="دریافت لیست، جستجو و صفحه‌بندی سمت سرور"
+        subtitle="CRUD پروژه‌ها"
         action={<Button variant="contained" onClick={() => navigate('/projects/create')}>ایجاد پروژه</Button>}
       />
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} mb={2}>
@@ -93,6 +117,17 @@ export const ProjectsPage = () => {
       ) : (
         <DataTable rows={mappedRows} columns={columns} loading={isPending} paginationMode="server" rowCount={total} paginationModel={paginationModel} onPaginationModelChange={setPaginationModel} />
       )}
+
+      <ConfirmDialog open={confirmId !== null} title="حذف پروژه" description="آیا از حذف پروژه مطمئن هستید؟" onClose={() => setConfirmId(null)} onConfirm={async () => { if (!confirmId) return; await deleteMutation.mutateAsync(confirmId); }} />
+
+      <Dialog open={!!detail} onClose={() => setDetail(null)} fullWidth maxWidth="sm">
+        <DialogTitle>جزئیات پروژه</DialogTitle>
+        <DialogContent>
+          <Stack spacing={1} mt={1}>
+            {detail ? Object.entries(detail).map(([key, value]) => <Typography key={key}><strong>{key}:</strong> {typeof value === 'object' ? JSON.stringify(value) : String(value)}</Typography>) : null}
+          </Stack>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
