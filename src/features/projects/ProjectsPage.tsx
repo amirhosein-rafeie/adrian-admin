@@ -14,6 +14,7 @@ import type { components } from '@/share/utils/api/__generated__/custom';
 import type { get200AdminProjectsResponseJson, get200AdminProjectsIdResponseJson, getAdminProjectsQueryParams } from '@/share/utils/api/__generated__/types';
 import { PROJECTS_LIST } from '@/share/constants';
 import { gregorianToJalali } from '@/share/utils/jalaliDate';
+import { resolveApiFileUrl } from '@/share/utils/fileUrl';
 import { clientRequest } from '@/share/utils/api/clientRequest';
 
 type ProjectRow = {
@@ -204,7 +205,7 @@ const ProjectDetailsContent = ({ detail }: { detail: get200AdminProjectsIdRespon
                 <Typography variant="body2">{media.name}</Typography>
                 <Typography variant="caption" color="text.secondary">{mediaTypeLabels[media.media_type]} • {gregorianToJalali(media.created_at)}</Typography>
               </Stack>
-              <Link href={media.path} target="_blank" rel="noreferrer" underline="hover">مشاهده فایل</Link>
+              <Link href={resolveApiFileUrl(media.path)} target="_blank" rel="noreferrer" underline="hover">مشاهده فایل</Link>
             </Stack>
           )) : <Typography variant="body2">فایلی ثبت نشده است.</Typography>}
         </Stack>
