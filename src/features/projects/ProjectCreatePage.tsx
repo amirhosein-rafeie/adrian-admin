@@ -1,8 +1,9 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Box, Button, Card, CardContent, Chip, Divider, MenuItem, Paper, Stack, Step, StepLabel, Stepper, TextField, Typography } from '@mui/material';
+import CalendarMonthRoundedIcon from '@mui/icons-material/CalendarMonthRounded';
+import { Box, Button, Card, CardContent, Checkbox, Chip, Divider, FormControlLabel, FormGroup, IconButton, InputAdornment, MenuItem, Paper, Stack, Step, StepLabel, Stepper, TextField, Typography } from '@mui/material';
 import { useMutation } from '@tanstack/react-query';
 import { ReactNode, useEffect, useMemo, useRef, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { PageHeader } from '@/components/PageHeader';
@@ -24,7 +25,8 @@ const schema = z.object({
   token_name: z.string().min(2, 'نام توکن الزامی است'),
   start_time: z.string().min(1, 'تاریخ شروع الزامی است'),
   dead_line: z.string().min(1, 'ددلاین الزامی است'),
-  contractor: z.string().optional()
+  contractor: z.string().optional(),
+  options: z.array(z.enum(['warehouse', 'heating_system', 'cooling_system', 'elevator', 'no_elevator_required'])).default([])
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -32,6 +34,13 @@ type MediaType = 'img' | 'video' | 'pdf';
 type MediaPreview = { file: File; url: string };
 
 const steps = ['اطلاعات پایه پروژه', 'افزودن مدیا به پروژه'];
+const projectOptions: { value: FormValues['options'][number]; label: string }[] = [
+  { value: 'warehouse', label: 'انباری' },
+  { value: 'heating_system', label: 'سیستم گرمایشی' },
+  { value: 'cooling_system', label: 'سیستم سرمایشی' },
+  { value: 'elevator', label: 'آسانسور' },
+  { value: 'no_elevator_required', label: 'عدم نیاز به آسانسور' }
+];
 
 const parseLocation = (value: string): { lat: number; lng: number } | null => {
   const [latRaw, lngRaw] = value.trim().split(/\s+/);
@@ -192,11 +201,14 @@ export const ProjectCreatePage = () => {
       token_name: '',
       start_time: '',
       dead_line: '',
-      contractor: ''
+      contractor: '',
+      options: []
     }
   });
 
   const locationValue = form.watch('location');
+  const startDateInputRef = useRef<HTMLInputElement | null>(null);
+  const deadlineInputRef = useRef<HTMLInputElement | null>(null);
   const imagePreviews = useMemo(() => mediaFiles.img.map((file) => ({ file, url: URL.createObjectURL(file) })), [mediaFiles.img]);
   const videoPreviews = useMemo(() => mediaFiles.video.map((file) => ({ file, url: URL.createObjectURL(file) })), [mediaFiles.video]);
 
@@ -298,10 +310,98 @@ export const ProjectCreatePage = () => {
                       <TextField label="واحد قیمت" {...form.register('price_currency')} error={!!form.formState.errors.price_currency} helperText={form.formState.errors.price_currency?.message} />
                       <TextField type="number" label="تعداد توکن" {...form.register('token_count')} error={!!form.formState.errors.token_count} helperText={form.formState.errors.token_count?.message} />
                       <TextField label="نام توکن" {...form.register('token_name')} error={!!form.formState.errors.token_name} helperText={form.formState.errors.token_name?.message} />
-                      <TextField type="date" label="تاریخ شروع" {...form.register('start_time')} error={!!form.formState.errors.start_time} helperText={form.formState.errors.start_time?.message} InputLabelProps={{ shrink: true }} />
-                      <TextField type="date" label="ددلاین" {...form.register('dead_line')} error={!!form.formState.errors.dead_line} helperText={form.formState.errors.dead_line?.message} InputLabelProps={{ shrink: true }} />
+                      <Controller
+                        name="start_time"
+                        control={form.control}
+                        render={({ field }) => (
+                          <TextField
+                            {...field}
+                            inputRef={(element) => {
+                              field.ref(element);
+                              startDateInputRef.current = element;
+                            }}
+                            type="date"
+                            label="تاریخ شروع"
+                            error={!!form.formState.errors.start_time}
+                            helperText={form.formState.errors.start_time?.message}
+                            InputLabelProps={{ shrink: true }}
+                            InputProps={{
+                              endAdornment: (
+                                <InputAdornment position="end">
+                                  <IconButton
+                                    edge="end"
+                                    onClick={() => startDateInputRef.current?.showPicker?.()}
+                                    aria-label="بازکردن تقویم تاریخ شروع"
+                                  >
+                                    <CalendarMonthRoundedIcon fontSize="small" />
+                                  </IconButton>
+                                </InputAdornment>
+                              )
+                            }}
+                          />
+                        )}
+                      />
+                      <Controller
+                        name="dead_line"
+                        control={form.control}
+                        render={({ field }) => (
+                          <TextField
+                            {...field}
+                            inputRef={(element) => {
+                              field.ref(element);
+                              deadlineInputRef.current = element;
+                            }}
+                            type="date"
+                            label="ددلاین"
+                            error={!!form.formState.errors.dead_line}
+                            helperText={form.formState.errors.dead_line?.message}
+                            InputLabelProps={{ shrink: true }}
+                            InputProps={{
+                              endAdornment: (
+                                <InputAdornment position="end">
+                                  <IconButton
+                                    edge="end"
+                                    onClick={() => deadlineInputRef.current?.showPicker?.()}
+                                    aria-label="بازکردن تقویم ددلاین"
+                                  >
+                                    <CalendarMonthRoundedIcon fontSize="small" />
+                                  </IconButton>
+                                </InputAdornment>
+                              )
+                            }}
+                          />
+                        )}
+                      />
                     </Box>
                     <TextField label="توضیحات" {...form.register('description')} error={!!form.formState.errors.description} helperText={form.formState.errors.description?.message} multiline minRows={3} />
+                    <Stack spacing={1}>
+                      <Typography variant="subtitle2" fontWeight={700}>امکانات پروژه</Typography>
+                      <Controller
+                        name="options"
+                        control={form.control}
+                        render={({ field }) => (
+                          <FormGroup row>
+                            {projectOptions.map((option) => (
+                              <FormControlLabel
+                                key={option.value}
+                                control={(
+                                  <Checkbox
+                                    checked={field.value.includes(option.value)}
+                                    onChange={(event) => {
+                                      const next = event.target.checked
+                                        ? [...field.value, option.value]
+                                        : field.value.filter((item) => item !== option.value);
+                                      field.onChange(next);
+                                    }}
+                                  />
+                                )}
+                                label={option.label}
+                              />
+                            ))}
+                          </FormGroup>
+                        )}
+                      />
+                    </Stack>
                   </Stack>
                 </Paper>
 
