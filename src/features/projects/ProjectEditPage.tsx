@@ -1,8 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import CalendarMonthRoundedIcon from '@mui/icons-material/CalendarMonthRounded';
-import { Box, Button, Card, CardContent, Checkbox, FormControlLabel, FormGroup, IconButton, InputAdornment, MenuItem, Stack, TextField, Typography } from '@mui/material';
+import { Box, Button, Card, CardContent, Checkbox, FormControlLabel, FormGroup, MenuItem, Stack, TextField, Typography } from '@mui/material';
 import { useMutation } from '@tanstack/react-query';
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { useNavigate, useParams } from 'react-router-dom';
 import { z } from 'zod';
@@ -13,6 +12,7 @@ import { queryClient } from '@/services/queryClient';
 import { PROJECTS_LIST } from '@/share/constants';
 import type { patchAdminProjectsIdRequestBodyJson } from '@/share/utils/api/__generated__/types';
 import { clientRequest } from '@/share/utils/api/clientRequest';
+import { gregorianToJalali, jalaliToGregorian } from '@/share/utils/jalaliDate';
 
 const schema = z.object({
   name: z.string().min(2, 'حداقل ۲ کاراکتر وارد کنید'),
@@ -24,8 +24,8 @@ const schema = z.object({
   price_currency: z.string().min(1, 'واحد قیمت الزامی است'),
   token_count: z.coerce.number().min(1, 'تعداد توکن باید حداقل ۱ باشد'),
   token_name: z.string().min(2, 'نام توکن الزامی است'),
-  start_time: z.string().min(1, 'تاریخ شروع الزامی است'),
-  dead_line: z.string().min(1, 'ددلاین الزامی است'),
+  start_time: z.string().min(1, 'تاریخ شروع الزامی است').refine((value) => Boolean(jalaliToGregorian(value)), 'فرمت تاریخ شروع معتبر نیست'),
+  dead_line: z.string().min(1, 'ددلاین الزامی است').refine((value) => Boolean(jalaliToGregorian(value)), 'فرمت ددلاین معتبر نیست'),
   contractor: z.string().optional(),
   options: z.array(z.enum(['warehouse', 'heating_system', 'cooling_system', 'elevator', 'no_elevator_required'])).default([])
 });
@@ -40,18 +40,11 @@ const projectOptions: { value: FormValues['options'][number]; label: string }[] 
   { value: 'no_elevator_required', label: 'عدم نیاز به آسانسور' }
 ];
 
-const normalizeDate = (value?: string | null) => {
-  if (!value) return '';
-  return value.length >= 10 ? value.slice(0, 10) : value;
-};
-
 export const ProjectEditPage = () => {
   const { id } = useParams();
   const projectId = Number(id);
   const navigate = useNavigate();
   const { notify } = useSnackbar();
-  const startDateInputRef = useRef<HTMLInputElement | null>(null);
-  const deadlineInputRef = useRef<HTMLInputElement | null>(null);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -88,8 +81,8 @@ export const ProjectEditPage = () => {
       price_currency: project.price_currency ?? 'IRR',
       token_count: Number(project.token_count ?? 1),
       token_name: project.token_name ?? '',
-      start_time: normalizeDate(project.start_time),
-      dead_line: normalizeDate(project.dead_line),
+      start_time: gregorianToJalali(project.start_time),
+      dead_line: gregorianToJalali(project.dead_line),
       contractor: project.contractor ?? '',
       options: Array.isArray(project.options) ? project.options : []
     });
@@ -105,7 +98,13 @@ export const ProjectEditPage = () => {
 
   const onSubmit = form.handleSubmit(async (values) => {
     try {
-      await updateMutation.mutateAsync(values);
+      const payload = {
+        ...values,
+        start_time: jalaliToGregorian(values.start_time),
+        dead_line: jalaliToGregorian(values.dead_line)
+      };
+
+      await updateMutation.mutateAsync(payload);
       await queryClient.invalidateQueries({ queryKey: [PROJECTS_LIST] });
       notify('پروژه با موفقیت ویرایش شد');
       navigate('/projects');
@@ -138,25 +137,12 @@ export const ProjectEditPage = () => {
                 render={({ field }) => (
                   <TextField
                     {...field}
-                    inputRef={(element) => {
-                      field.ref(element);
-                      startDateInputRef.current = element;
-                    }}
-                    type="date"
-                    label="تاریخ شروع"
+                    label="تاریخ شروع (شمسی)"
+                    placeholder="۱۴۰۴/۰۱/۱۵"
                     error={!!form.formState.errors.start_time}
-                    helperText={form.formState.errors.start_time?.message}
-                    InputLabelProps={{ shrink: true }}
+                    helperText={form.formState.errors.start_time?.message ?? 'فرمت: YYYY/MM/DD'}
                     disabled={isPending}
-                    InputProps={{
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <IconButton edge="end" onClick={() => startDateInputRef.current?.showPicker?.()} aria-label="بازکردن تقویم تاریخ شروع">
-                            <CalendarMonthRoundedIcon fontSize="small" />
-                          </IconButton>
-                        </InputAdornment>
-                      )
-                    }}
+                    inputProps={{ dir: 'ltr' }}
                   />
                 )}
               />
@@ -166,25 +152,12 @@ export const ProjectEditPage = () => {
                 render={({ field }) => (
                   <TextField
                     {...field}
-                    inputRef={(element) => {
-                      field.ref(element);
-                      deadlineInputRef.current = element;
-                    }}
-                    type="date"
-                    label="ددلاین"
+                    label="ددلاین (شمسی)"
+                    placeholder="۱۴۰۴/۱۲/۲۹"
                     error={!!form.formState.errors.dead_line}
-                    helperText={form.formState.errors.dead_line?.message}
-                    InputLabelProps={{ shrink: true }}
+                    helperText={form.formState.errors.dead_line?.message ?? 'فرمت: YYYY/MM/DD'}
                     disabled={isPending}
-                    InputProps={{
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <IconButton edge="end" onClick={() => deadlineInputRef.current?.showPicker?.()} aria-label="بازکردن تقویم ددلاین">
-                            <CalendarMonthRoundedIcon fontSize="small" />
-                          </IconButton>
-                        </InputAdornment>
-                      )
-                    }}
+                    inputProps={{ dir: 'ltr' }}
                   />
                 )}
               />

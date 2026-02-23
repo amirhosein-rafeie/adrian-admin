@@ -1,6 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import CalendarMonthRoundedIcon from '@mui/icons-material/CalendarMonthRounded';
-import { Box, Button, Card, CardContent, Checkbox, Chip, Divider, FormControlLabel, FormGroup, IconButton, InputAdornment, MenuItem, Paper, Stack, Step, StepLabel, Stepper, TextField, Typography } from '@mui/material';
+import { Box, Button, Card, CardContent, Checkbox, Chip, Divider, FormControlLabel, FormGroup, MenuItem, Paper, Stack, Step, StepLabel, Stepper, TextField, Typography } from '@mui/material';
 import { useMutation } from '@tanstack/react-query';
 import { ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
@@ -12,6 +11,7 @@ import { queryClient } from '@/services/queryClient';
 import { PROJECTS_LIST } from '@/share/constants';
 import type { postAdminProjectsIdMediaRequestBodyFormData, postAdminProjectsRequestBodyJson } from '@/share/utils/api/__generated__/types';
 import { clientRequest } from '@/share/utils/api/clientRequest';
+import { jalaliToGregorian } from '@/share/utils/jalaliDate';
 
 const schema = z.object({
   name: z.string().min(2, 'حداقل ۲ کاراکتر وارد کنید'),
@@ -23,8 +23,8 @@ const schema = z.object({
   price_currency: z.string().min(1, 'واحد قیمت الزامی است'),
   token_count: z.coerce.number().min(1, 'تعداد توکن باید حداقل ۱ باشد'),
   token_name: z.string().min(2, 'نام توکن الزامی است'),
-  start_time: z.string().min(1, 'تاریخ شروع الزامی است'),
-  dead_line: z.string().min(1, 'ددلاین الزامی است'),
+  start_time: z.string().min(1, 'تاریخ شروع الزامی است').refine((value) => Boolean(jalaliToGregorian(value)), 'فرمت تاریخ شروع معتبر نیست'),
+  dead_line: z.string().min(1, 'ددلاین الزامی است').refine((value) => Boolean(jalaliToGregorian(value)), 'فرمت ددلاین معتبر نیست'),
   contractor: z.string().optional(),
   options: z.array(z.enum(['warehouse', 'heating_system', 'cooling_system', 'elevator', 'no_elevator_required'])).default([])
 });
@@ -207,8 +207,6 @@ export const ProjectCreatePage = () => {
   });
 
   const locationValue = form.watch('location');
-  const startDateInputRef = useRef<HTMLInputElement | null>(null);
-  const deadlineInputRef = useRef<HTMLInputElement | null>(null);
   const imagePreviews = useMemo(() => mediaFiles.img.map((file) => ({ file, url: URL.createObjectURL(file) })), [mediaFiles.img]);
   const videoPreviews = useMemo(() => mediaFiles.video.map((file) => ({ file, url: URL.createObjectURL(file) })), [mediaFiles.video]);
 
@@ -267,7 +265,13 @@ export const ProjectCreatePage = () => {
 
   const handleCreateProject = form.handleSubmit(async (values) => {
     try {
-      const createResult = (await createMutation.mutateAsync(values)) as { data?: { id?: number } };
+      const payload = {
+        ...values,
+        start_time: jalaliToGregorian(values.start_time),
+        dead_line: jalaliToGregorian(values.dead_line)
+      };
+
+      const createResult = (await createMutation.mutateAsync(payload)) as { data?: { id?: number } };
       const projectId = createResult.data?.id;
       if (!projectId) throw new Error('شناسه پروژه از سرور دریافت نشد');
 
@@ -316,28 +320,11 @@ export const ProjectCreatePage = () => {
                         render={({ field }) => (
                           <TextField
                             {...field}
-                            inputRef={(element) => {
-                              field.ref(element);
-                              startDateInputRef.current = element;
-                            }}
-                            type="date"
-                            label="تاریخ شروع"
+                            label="تاریخ شروع (شمسی)"
+                            placeholder="۱۴۰۴/۰۱/۱۵"
                             error={!!form.formState.errors.start_time}
-                            helperText={form.formState.errors.start_time?.message}
-                            InputLabelProps={{ shrink: true }}
-                            InputProps={{
-                              endAdornment: (
-                                <InputAdornment position="end">
-                                  <IconButton
-                                    edge="end"
-                                    onClick={() => startDateInputRef.current?.showPicker?.()}
-                                    aria-label="بازکردن تقویم تاریخ شروع"
-                                  >
-                                    <CalendarMonthRoundedIcon fontSize="small" />
-                                  </IconButton>
-                                </InputAdornment>
-                              )
-                            }}
+                            helperText={form.formState.errors.start_time?.message ?? 'فرمت: YYYY/MM/DD'}
+                            inputProps={{ dir: 'ltr' }}
                           />
                         )}
                       />
@@ -347,28 +334,11 @@ export const ProjectCreatePage = () => {
                         render={({ field }) => (
                           <TextField
                             {...field}
-                            inputRef={(element) => {
-                              field.ref(element);
-                              deadlineInputRef.current = element;
-                            }}
-                            type="date"
-                            label="ددلاین"
+                            label="ددلاین (شمسی)"
+                            placeholder="۱۴۰۴/۱۲/۲۹"
                             error={!!form.formState.errors.dead_line}
-                            helperText={form.formState.errors.dead_line?.message}
-                            InputLabelProps={{ shrink: true }}
-                            InputProps={{
-                              endAdornment: (
-                                <InputAdornment position="end">
-                                  <IconButton
-                                    edge="end"
-                                    onClick={() => deadlineInputRef.current?.showPicker?.()}
-                                    aria-label="بازکردن تقویم ددلاین"
-                                  >
-                                    <CalendarMonthRoundedIcon fontSize="small" />
-                                  </IconButton>
-                                </InputAdornment>
-                              )
-                            }}
+                            helperText={form.formState.errors.dead_line?.message ?? 'فرمت: YYYY/MM/DD'}
+                            inputProps={{ dir: 'ltr' }}
                           />
                         )}
                       />
