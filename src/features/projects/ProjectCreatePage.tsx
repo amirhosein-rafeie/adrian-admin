@@ -1,6 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import CalendarMonthRoundedIcon from '@mui/icons-material/CalendarMonthRounded';
-import { Box, Button, Card, CardContent, Checkbox, Chip, Divider, FormControlLabel, FormGroup, IconButton, InputAdornment, MenuItem, Paper, Stack, Step, StepLabel, Stepper, TextField, Typography } from '@mui/material';
+import { Box, Button, Card, CardContent, Checkbox, Chip, Divider, FormControlLabel, FormGroup, MenuItem, Paper, Stack, Step, StepLabel, Stepper, TextField, Typography } from '@mui/material';
 import { useMutation } from '@tanstack/react-query';
 import { ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
@@ -12,6 +11,12 @@ import { queryClient } from '@/services/queryClient';
 import { PROJECTS_LIST } from '@/share/constants';
 import type { postAdminProjectsIdMediaRequestBodyFormData, postAdminProjectsRequestBodyJson } from '@/share/utils/api/__generated__/types';
 import { clientRequest } from '@/share/utils/api/clientRequest';
+import { jalaliToGregorian } from '@/share/utils/jalaliDate';
+
+const optionalString = z.preprocess((value) => {
+  if (value === '' || value === null || value === undefined) return undefined;
+  return value;
+}, z.string().optional());
 
 const schema = z.object({
   name: z.string().min(2, 'حداقل ۲ کاراکتر وارد کنید'),
@@ -22,14 +27,29 @@ const schema = z.object({
   price: z.string().min(1, 'قیمت الزامی است'),
   price_currency: z.string().min(1, 'واحد قیمت الزامی است'),
   token_count: z.coerce.number().min(1, 'تعداد توکن باید حداقل ۱ باشد'),
+  token_sold: z.preprocess((value) => {
+    if (value === '' || value === null || value === undefined) return undefined;
+    return value;
+  }, z.coerce.number().min(0, 'تعداد توکن فروخته‌شده نمی‌تواند منفی باشد').optional()),
   token_name: z.string().min(2, 'نام توکن الزامی است'),
-  start_time: z.string().min(1, 'تاریخ شروع الزامی است'),
-  dead_line: z.string().min(1, 'ددلاین الزامی است'),
+  sale_price_per_meter: optionalString,
+  token_price_toman: optionalString,
+  price_per_meter_token: optionalString,
+  estimated_profit_percentage: optionalString,
+  start_time: z.string().min(1, 'تاریخ شروع الزامی است').refine((value) => Boolean(jalaliToGregorian(value)), 'فرمت تاریخ شروع معتبر نیست'),
+  dead_line: z.string().min(1, 'ددلاین الزامی است').refine((value) => Boolean(jalaliToGregorian(value)), 'فرمت ددلاین معتبر نیست'),
   contractor: z.string().optional(),
   options: z.array(z.enum(['warehouse', 'heating_system', 'cooling_system', 'elevator', 'no_elevator_required'])).default([])
 });
 
 type FormValues = z.infer<typeof schema>;
+type ExtendedProjectPayload = postAdminProjectsRequestBodyJson & {
+  sale_price_per_meter?: string;
+  token_price_toman?: string;
+  price_per_meter_token?: string;
+  estimated_profit_percentage?: string;
+};
+
 type MediaType = 'img' | 'video' | 'pdf';
 type MediaPreview = { file: File; url: string };
 
@@ -198,7 +218,12 @@ export const ProjectCreatePage = () => {
       price: '',
       price_currency: 'IRR',
       token_count: 1,
+      token_sold: 0,
       token_name: '',
+      sale_price_per_meter: '',
+      token_price_toman: '',
+      price_per_meter_token: '',
+      estimated_profit_percentage: '',
       start_time: '',
       dead_line: '',
       contractor: '',
@@ -207,8 +232,6 @@ export const ProjectCreatePage = () => {
   });
 
   const locationValue = form.watch('location');
-  const startDateInputRef = useRef<HTMLInputElement | null>(null);
-  const deadlineInputRef = useRef<HTMLInputElement | null>(null);
   const imagePreviews = useMemo(() => mediaFiles.img.map((file) => ({ file, url: URL.createObjectURL(file) })), [mediaFiles.img]);
   const videoPreviews = useMemo(() => mediaFiles.video.map((file) => ({ file, url: URL.createObjectURL(file) })), [mediaFiles.video]);
 
@@ -218,7 +241,7 @@ export const ProjectCreatePage = () => {
   }, [imagePreviews, videoPreviews]);
 
   const createMutation = useMutation({
-    mutationFn: (values: postAdminProjectsRequestBodyJson) => clientRequest.POST('/admin/projects', { body: values })
+    mutationFn: (values: ExtendedProjectPayload) => clientRequest.POST('/admin/projects', { body: values as postAdminProjectsRequestBodyJson })
   });
 
   const uploadMediaMutation = useMutation({
@@ -267,7 +290,13 @@ export const ProjectCreatePage = () => {
 
   const handleCreateProject = form.handleSubmit(async (values) => {
     try {
-      const createResult = (await createMutation.mutateAsync(values)) as { data?: { id?: number } };
+      const payload = {
+        ...values,
+        start_time: jalaliToGregorian(values.start_time),
+        dead_line: jalaliToGregorian(values.dead_line)
+      };
+
+      const createResult = (await createMutation.mutateAsync(payload)) as { data?: { id?: number } };
       const projectId = createResult.data?.id;
       if (!projectId) throw new Error('شناسه پروژه از سرور دریافت نشد');
 
@@ -309,35 +338,23 @@ export const ProjectCreatePage = () => {
                       <TextField label="قیمت" {...form.register('price')} error={!!form.formState.errors.price} helperText={form.formState.errors.price?.message} />
                       <TextField label="واحد قیمت" {...form.register('price_currency')} error={!!form.formState.errors.price_currency} helperText={form.formState.errors.price_currency?.message} />
                       <TextField type="number" label="تعداد توکن" {...form.register('token_count')} error={!!form.formState.errors.token_count} helperText={form.formState.errors.token_count?.message} />
+                      <TextField type="number" label="توکن فروخته‌شده" {...form.register('token_sold')} error={!!form.formState.errors.token_sold} helperText={form.formState.errors.token_sold?.message ?? 'اختیاری'} />
                       <TextField label="نام توکن" {...form.register('token_name')} error={!!form.formState.errors.token_name} helperText={form.formState.errors.token_name?.message} />
+                      <TextField label="قیمت فروش هر متر ملک" {...form.register('sale_price_per_meter')} error={!!form.formState.errors.sale_price_per_meter} helperText={form.formState.errors.sale_price_per_meter?.message ?? 'اختیاری'} />
+                      <TextField label="قیمت هر توکن (تومان)" {...form.register('token_price_toman')} error={!!form.formState.errors.token_price_toman} helperText={form.formState.errors.token_price_toman?.message ?? 'اختیاری'} />
+                      <TextField label="قیمت هر متر به توکن" {...form.register('price_per_meter_token')} error={!!form.formState.errors.price_per_meter_token} helperText={form.formState.errors.price_per_meter_token?.message ?? 'اختیاری'} />
+                      <TextField label="درصد سود پیش‌بینی‌شده" {...form.register('estimated_profit_percentage')} error={!!form.formState.errors.estimated_profit_percentage} helperText={form.formState.errors.estimated_profit_percentage?.message ?? 'اختیاری'} />
                       <Controller
                         name="start_time"
                         control={form.control}
                         render={({ field }) => (
                           <TextField
                             {...field}
-                            inputRef={(element) => {
-                              field.ref(element);
-                              startDateInputRef.current = element;
-                            }}
-                            type="date"
-                            label="تاریخ شروع"
+                            label="تاریخ شروع (شمسی)"
+                            placeholder="۱۴۰۴/۰۱/۱۵"
                             error={!!form.formState.errors.start_time}
-                            helperText={form.formState.errors.start_time?.message}
-                            InputLabelProps={{ shrink: true }}
-                            InputProps={{
-                              endAdornment: (
-                                <InputAdornment position="end">
-                                  <IconButton
-                                    edge="end"
-                                    onClick={() => startDateInputRef.current?.showPicker?.()}
-                                    aria-label="بازکردن تقویم تاریخ شروع"
-                                  >
-                                    <CalendarMonthRoundedIcon fontSize="small" />
-                                  </IconButton>
-                                </InputAdornment>
-                              )
-                            }}
+                            helperText={form.formState.errors.start_time?.message ?? 'فرمت: YYYY/MM/DD'}
+                            inputProps={{ dir: 'ltr' }}
                           />
                         )}
                       />
@@ -347,28 +364,11 @@ export const ProjectCreatePage = () => {
                         render={({ field }) => (
                           <TextField
                             {...field}
-                            inputRef={(element) => {
-                              field.ref(element);
-                              deadlineInputRef.current = element;
-                            }}
-                            type="date"
-                            label="ددلاین"
+                            label="ددلاین (شمسی)"
+                            placeholder="۱۴۰۴/۱۲/۲۹"
                             error={!!form.formState.errors.dead_line}
-                            helperText={form.formState.errors.dead_line?.message}
-                            InputLabelProps={{ shrink: true }}
-                            InputProps={{
-                              endAdornment: (
-                                <InputAdornment position="end">
-                                  <IconButton
-                                    edge="end"
-                                    onClick={() => deadlineInputRef.current?.showPicker?.()}
-                                    aria-label="بازکردن تقویم ددلاین"
-                                  >
-                                    <CalendarMonthRoundedIcon fontSize="small" />
-                                  </IconButton>
-                                </InputAdornment>
-                              )
-                            }}
+                            helperText={form.formState.errors.dead_line?.message ?? 'فرمت: YYYY/MM/DD'}
+                            inputProps={{ dir: 'ltr' }}
                           />
                         )}
                       />
