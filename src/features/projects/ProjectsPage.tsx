@@ -98,13 +98,21 @@ export const ProjectsPage = () => {
     options: 'امکانات پروژه',
     description: 'توضیحات',
     summary: 'خلاصه',
+    contractor: 'پیمانکار',
+    price_currency: 'واحد قیمت',
+    token_count: 'تعداد توکن',
+    token_sold: 'توکن فروخته‌شده',
+    sale_price_per_meter: 'قیمت فروش هر متر ملک',
+    token_price_toman: 'قیمت هر توکن (تومان)',
+    price_per_meter_token: 'قیمت هر متر به توکن',
+    estimated_profit_percentage: 'درصد سود پیش‌بینی‌شده',
     contract_address: 'آدرس قرارداد',
     owner_wallet: 'کیف پول مالک',
     wallet_address: 'آدرس کیف پول',
     address: 'آدرس',
     project_address: 'آدرس پروژه',
-    location: 'موقعیت',
-    project_location: 'موقعیت پروژه',
+    location: 'مختصات (lat lng)',
+    project_location: 'لوکیشن پروژه',
     city: 'شهر',
     province: 'استان',
     state: 'ایالت',
@@ -115,13 +123,23 @@ export const ProjectsPage = () => {
     longitude: 'طول جغرافیایی',
     lat: 'عرض جغرافیایی',
     lng: 'طول جغرافیایی',
-    deadline: 'ددلاین',
+    dead_line: 'ددلاین (شمسی)',
+    deadline: 'ددلاین (شمسی)',
+    start_time: 'تاریخ شروع (شمسی)',
     start_date: 'تاریخ شروع',
     end_date: 'تاریخ پایان',
     due_date: 'تاریخ سررسید',
     created_at: 'تاریخ ایجاد',
     updated_at: 'آخرین بروزرسانی',
     published_at: 'تاریخ انتشار'
+  };
+
+  const projectOptionLabels: Record<string, string> = {
+    warehouse: 'انباری',
+    heating_system: 'سیستم گرمایشی',
+    cooling_system: 'سیستم سرمایشی',
+    elevator: 'آسانسور',
+    no_elevator_required: 'عدم نیاز به آسانسور'
   };
 
   const getDetailLabel = (key: string) => detailLabels[key] ?? `فیلد ${key.replace(/_/g, ' ')}`;
@@ -139,7 +157,7 @@ export const ProjectsPage = () => {
       return (
         <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
           {value.map((item, index) => (
-            <Chip key={`${String(item)}-${index}`} label={typeof item === 'object' ? JSON.stringify(item) : String(item)} size="small" variant="outlined" />
+            <Chip key={`${String(item)}-${index}`} label={typeof item === 'object' ? JSON.stringify(item) : key === 'options' ? (projectOptionLabels[String(item)] ?? String(item)) : String(item)} size="small" variant="outlined" />
           ))}
         </Stack>
       );
