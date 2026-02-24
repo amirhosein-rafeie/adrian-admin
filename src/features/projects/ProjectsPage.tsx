@@ -1,4 +1,18 @@
-import { Button, Dialog, DialogContent, DialogTitle, MenuItem, Stack, TextField, Typography } from '@mui/material';
+import {
+  Box,
+  Button,
+  Chip,
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  Divider,
+  Grid,
+  MenuItem,
+  Paper,
+  Stack,
+  TextField,
+  Typography
+} from '@mui/material';
 import { GridColDef, GridPaginationModel } from '@mui/x-data-grid';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
@@ -71,6 +85,59 @@ export const ProjectsPage = () => {
 
   const total = responseData?.meta?.total ?? 0;
 
+  const detailLabels: Record<string, string> = {
+    id: 'شناسه',
+    name: 'نام پروژه',
+    token_name: 'نام توکن',
+    symbol: 'نماد توکن',
+    price: 'قیمت',
+    status: 'وضعیت',
+    type: 'نوع پروژه',
+    options: 'امکانات پروژه',
+    description: 'توضیحات',
+    contract_address: 'آدرس قرارداد',
+    owner_wallet: 'کیف پول مالک',
+    created_at: 'تاریخ ایجاد',
+    updated_at: 'آخرین بروزرسانی',
+    project_location: 'لوکیشن پروژه',
+    location: 'لوکیشن'
+  };
+
+  const formatDetailValue = (key: string, value: unknown) => {
+    if (value === null || value === undefined || value === '') return '—';
+
+    if (key === 'status' && typeof value === 'string') {
+      return <StatusChip status={value as 'processing' | 'finished'} />;
+    }
+
+    if (Array.isArray(value)) {
+      if (!value.length) return '—';
+
+      return (
+        <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+          {value.map((item, index) => (
+            <Chip key={`${String(item)}-${index}`} label={typeof item === 'object' ? JSON.stringify(item) : String(item)} size="small" variant="outlined" />
+          ))}
+        </Stack>
+      );
+    }
+
+    if (typeof value === 'object') {
+      const entries = Object.entries(value as Record<string, unknown>);
+      return (
+        <Stack spacing={0.75}>
+          {entries.map(([childKey, childValue]) => (
+            <Typography key={childKey} variant="body2" color="text.secondary">
+              {detailLabels[childKey] ?? childKey}: {childValue === null || childValue === undefined || childValue === '' ? '—' : String(childValue)}
+            </Typography>
+          ))}
+        </Stack>
+      );
+    }
+
+    return String(value);
+  };
+
   const columns: GridColDef<ProjectRow>[] = [
     { field: 'id', headerName: 'شناسه', width: 80 },
     { field: 'name', headerName: 'عنوان پروژه', flex: 1 },
@@ -120,12 +187,36 @@ export const ProjectsPage = () => {
 
       <ConfirmDialog open={confirmId !== null} title="حذف پروژه" description="آیا از حذف پروژه مطمئن هستید؟" onClose={() => setConfirmId(null)} onConfirm={async () => { if (!confirmId) return; await deleteMutation.mutateAsync(confirmId); }} />
 
-      <Dialog open={!!detail} onClose={() => setDetail(null)} fullWidth maxWidth="sm">
-        <DialogTitle>جزئیات پروژه</DialogTitle>
-        <DialogContent>
-          <Stack spacing={1} mt={1}>
-            {detail ? Object.entries(detail).map(([key, value]) => <Typography key={key}><strong>{key}:</strong> {typeof value === 'object' ? JSON.stringify(value) : String(value)}</Typography>) : null}
+      <Dialog open={!!detail} onClose={() => setDetail(null)} fullWidth maxWidth="md">
+        <DialogTitle>
+          <Stack spacing={0.75}>
+            <Typography variant="h6" fontWeight={700}>جزئیات پروژه</Typography>
+            <Typography variant="body2" color="text.secondary">نمایش اطلاعات کامل پروژه به‌صورت دسته‌بندی‌شده</Typography>
           </Stack>
+        </DialogTitle>
+        <DialogContent>
+          <Paper variant="outlined" sx={{ borderRadius: 3, overflow: 'hidden' }}>
+            <Box px={2.5} py={1.5} bgcolor="grey.50">
+              <Typography variant="subtitle2" fontWeight={700}>اطلاعات پایه</Typography>
+            </Box>
+            <Divider />
+            <Grid container spacing={2} p={2.5}>
+              {detail
+                ? Object.entries(detail).map(([key, value]) => (
+                    <Grid key={key} item xs={12} sm={6}>
+                      <Stack spacing={0.75}>
+                        <Typography variant="caption" color="text.secondary" fontWeight={700}>
+                          {detailLabels[key] ?? key}
+                        </Typography>
+                        <Typography variant="body2" component="div">
+                          {formatDetailValue(key, value)}
+                        </Typography>
+                      </Stack>
+                    </Grid>
+                  ))
+                : null}
+            </Grid>
+          </Paper>
         </DialogContent>
       </Dialog>
     </>
