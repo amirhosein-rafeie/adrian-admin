@@ -1,16 +1,32 @@
 import { DatePicker, DatePickerProps } from '@mui/x-date-pickers';
+import type { SxProps } from '@mui/material/styles';
 import type { Theme } from '@mui/material/styles';
 import type { Moment } from 'moment-jalaali';
 
 const CustomDatePicker = (props: DatePickerProps<Moment>) => {
+  const textFieldSx = props.slotProps?.textField && 'sx' in props.slotProps.textField
+    ? (props.slotProps.textField.sx as SxProps<Theme>)
+    : undefined;
+
   return (
     <DatePicker
       {...props}
       slotProps={{
         ...props?.slotProps,
         textField: {
+          ...props.slotProps?.textField,
           fullWidth: true,
-          ...props.slotProps?.textField
+          variant: props.slotProps?.textField?.variant ?? 'outlined',
+          size: props.slotProps?.textField?.size ?? 'medium',
+          sx: [
+            {
+              '& .MuiInputBase-root': {
+                minHeight: 56,
+                backgroundColor: 'transparent'
+              }
+            },
+            ...(Array.isArray(textFieldSx) ? textFieldSx : textFieldSx ? [textFieldSx] : [])
+          ]
         },
         layout: {
           ...props.slotProps?.layout,
