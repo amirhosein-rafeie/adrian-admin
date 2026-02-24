@@ -168,7 +168,7 @@ export const ProjectsPage = () => {
     <>
       <PageHeader
         title="پروژه‌ها"
-        subtitle="CRUD پروژه‌ها"
+        subtitle="مدیریت پروژه‌ها"
         action={<Button variant="contained" onClick={() => navigate('/projects/create')}>ایجاد پروژه</Button>}
       />
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} mb={2}>
@@ -188,16 +188,16 @@ export const ProjectsPage = () => {
       <ConfirmDialog open={confirmId !== null} title="حذف پروژه" description="آیا از حذف پروژه مطمئن هستید؟" onClose={() => setConfirmId(null)} onConfirm={async () => { if (!confirmId) return; await deleteMutation.mutateAsync(confirmId); }} />
 
       <Dialog open={!!detail} onClose={() => setDetail(null)} fullWidth maxWidth="md">
-        <DialogTitle>
+        <DialogTitle sx={{ bgcolor: "primary.main", color: "primary.contrastText", py: 2 }}>
           <Stack spacing={0.75}>
             <Typography variant="h6" fontWeight={700}>جزئیات پروژه</Typography>
-            <Typography variant="body2" color="text.secondary">نمایش اطلاعات کامل پروژه به‌صورت دسته‌بندی‌شده</Typography>
+            <Typography variant="body2" sx={{ color: "primary.contrastText", opacity: 0.9 }}>نمایش اطلاعات کامل پروژه به‌صورت دسته‌بندی‌شده</Typography>
           </Stack>
         </DialogTitle>
         <DialogContent>
           <Paper variant="outlined" sx={{ borderRadius: 3, overflow: 'hidden' }}>
-            <Box px={2.5} py={1.5} bgcolor="grey.50">
-              <Typography variant="subtitle2" fontWeight={700}>اطلاعات پایه</Typography>
+            <Box px={2.5} py={1.5} bgcolor="primary.50">
+              <Typography variant="subtitle2" fontWeight={700} color="primary.main">اطلاعات پایه</Typography>
             </Box>
             <Divider />
             <Grid container spacing={2} p={2.5}>
