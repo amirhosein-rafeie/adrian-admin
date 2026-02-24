@@ -1,5 +1,5 @@
 import { DataGrid, DataGridProps, GridColDef } from '@mui/x-data-grid';
-import { Box, Skeleton } from '@mui/material';
+import { Box, Skeleton, useMediaQuery, useTheme } from '@mui/material';
 import { useMemo } from 'react';
 
 const faLocaleText = {
@@ -53,9 +53,13 @@ const faLocaleText = {
 };
 
 export const DataTable = (props: DataGridProps) => {
+  const { columns: inputColumns, sx: customSx, ...restProps } = props;
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
   const columns = useMemo(
     () =>
-      (props.columns ?? []).map((column) => {
+      (inputColumns ?? []).map((column) => {
         const col = column as GridColDef;
         if (!col.field.includes('created_at') || col.valueFormatter) return col;
 
@@ -73,11 +77,22 @@ export const DataTable = (props: DataGridProps) => {
           }
         } as GridColDef;
       }),
-    [props.columns]
+    [inputColumns]
   );
 
+  const minTableWidth = useMemo(() => {
+    const totalColumnWidth = columns.reduce((sum, column) => {
+      const col = column as GridColDef;
+      if (typeof col.width === 'number') return sum + col.width;
+      if (typeof col.minWidth === 'number') return sum + col.minWidth;
+      return sum + 120;
+    }, 0);
+
+    return Math.max(totalColumnWidth, isMobile ? 560 : 760);
+  }, [columns, isMobile]);
+
   return (
-    <Box sx={{ width: '100%', overflowX: 'auto' }}>
+    <Box sx={{ width: '100%', maxWidth: '100%', overflowX: 'auto' }}>
       <Box sx={{ width: '100%', minWidth: 0, height: 520 }}>
         {props.loading ? (
           <Skeleton variant="rounded" height={520} />
@@ -87,8 +102,19 @@ export const DataTable = (props: DataGridProps) => {
             pageSizeOptions={[5, 10, 20]}
             localeText={faLocaleText}
             initialState={{ pagination: { paginationModel: { pageSize: 10, page: 0 } } }}
-            sx={{ minWidth: { xs: 760, md: 0 } }}
-            {...props}
+            sx={[
+              {
+                minWidth: minTableWidth,
+                '& .MuiDataGrid-cell, & .MuiDataGrid-columnHeaderTitle': {
+                  fontSize: { xs: '0.75rem', sm: '0.875rem' }
+                },
+                '& .MuiDataGrid-columnHeader, & .MuiDataGrid-cell': {
+                  px: { xs: 1, sm: 1.5 }
+                }
+              },
+              ...(Array.isArray(customSx) ? customSx : [customSx])
+            ]}
+            {...restProps}
             columns={columns}
           />
         )}
