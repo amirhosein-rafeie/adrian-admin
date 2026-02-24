@@ -10,10 +10,6 @@ const CustomDatePicker = (props: DatePickerProps<Moment>) => {
         ...props?.slotProps,
         textField: {
           fullWidth: true,
-          sx: {
-            background: 'white',
-            borderRadius: '0.3rem'
-          },
           ...props.slotProps?.textField
         },
         layout: {
