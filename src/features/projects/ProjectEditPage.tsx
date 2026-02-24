@@ -334,7 +334,7 @@ export const ProjectEditPage = () => {
               <TextField label="قیمت فروش هر متر ملک" InputLabelProps={floatingLabelProps} {...form.register('sale_price_per_meter')} error={!!form.formState.errors.sale_price_per_meter} helperText={form.formState.errors.sale_price_per_meter?.message ?? 'اختیاری'} disabled={isPending} />
               <TextField label="قیمت هر توکن (تومان)" InputLabelProps={floatingLabelProps} {...form.register('token_price_toman')} error={!!form.formState.errors.token_price_toman} helperText={form.formState.errors.token_price_toman?.message ?? 'اختیاری'} disabled={isPending} />
               <TextField label="قیمت هر متر به توکن" InputLabelProps={floatingLabelProps} {...form.register('price_per_meter_token')} error={!!form.formState.errors.price_per_meter_token} helperText={form.formState.errors.price_per_meter_token?.message ?? 'اختیاری'} disabled={isPending} />
-              <TextField label="درصد سود پیش‌بینی‌شده" InputLabelProps={floatingLabelProps} {...form.register('estimated_profit_percentage')} error={!!form.formState.errors.estimated_profit_percentage} helperText={form.formState.errors.estimated_profit_percentage?.message ?? 'اختیاری'} disabled={isPending} />
+              <TextField label="درصد سود پیش‌بینی‌شده" sx={{ gridColumn: { md: '1 / -1' } }} InputLabelProps={floatingLabelProps} {...form.register('estimated_profit_percentage')} error={!!form.formState.errors.estimated_profit_percentage} helperText={form.formState.errors.estimated_profit_percentage?.message ?? 'اختیاری'} disabled={isPending} />
               <Controller
                 name="start_time"
                 control={form.control}
