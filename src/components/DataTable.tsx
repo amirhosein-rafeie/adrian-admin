@@ -80,19 +80,25 @@ export const DataTable = (props: DataGridProps) => {
     [inputColumns]
   );
 
-  const minTableWidth = useMemo(() => {
-    const totalColumnWidth = columns.reduce((sum, column) => {
-      const col = column as GridColDef;
-      if (typeof col.width === 'number') return sum + col.width;
-      if (typeof col.minWidth === 'number') return sum + col.minWidth;
-      return sum + 120;
-    }, 0);
+  const responsiveColumns = useMemo(
+    () =>
+      columns.map((column) => {
+        const col = column as GridColDef;
+        if (!isMobile) return col;
 
-    return Math.max(totalColumnWidth, isMobile ? 560 : 760);
-  }, [columns, isMobile]);
+        const minWidth = typeof col.minWidth === 'number' ? Math.min(col.minWidth, 110) : 90;
+        return {
+          ...col,
+          width: undefined,
+          minWidth,
+          flex: col.flex ?? 1
+        } as GridColDef;
+      }),
+    [columns, isMobile]
+  );
 
   return (
-    <Box sx={{ width: '100%', maxWidth: '100%', overflowX: 'auto' }}>
+    <Box sx={{ width: '100%', maxWidth: '100%', overflowX: 'hidden' }}>
       <Box sx={{ width: '100%', minWidth: 0, height: 520 }}>
         {props.loading ? (
           <Skeleton variant="rounded" height={520} />
@@ -104,18 +110,21 @@ export const DataTable = (props: DataGridProps) => {
             initialState={{ pagination: { paginationModel: { pageSize: 10, page: 0 } } }}
             sx={[
               {
-                minWidth: minTableWidth,
+                minWidth: 0,
                 '& .MuiDataGrid-cell, & .MuiDataGrid-columnHeaderTitle': {
                   fontSize: { xs: '0.75rem', sm: '0.875rem' }
                 },
                 '& .MuiDataGrid-columnHeader, & .MuiDataGrid-cell': {
                   px: { xs: 1, sm: 1.5 }
+                },
+                '& .MuiDataGrid-main': {
+                  overflowX: 'hidden'
                 }
               },
               ...(Array.isArray(customSx) ? customSx : [customSx])
             ]}
             {...restProps}
-            columns={columns}
+            columns={responsiveColumns}
           />
         )}
       </Box>
