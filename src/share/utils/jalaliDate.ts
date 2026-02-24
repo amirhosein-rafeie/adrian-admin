@@ -35,4 +35,10 @@ export const formatDateToJalali = (value?: string | null, fallback = '—') => {
   return parsed.format(format);
 };
 
-export const isDateLikeField = (field: string) => /(?:^|_)(?:date|time|at|deadline)(?:$|_)/i.test(field);
+export const isDateLikeField = (field: string) => {
+  const normalized = field.toLowerCase();
+  return (
+    /(?:^|_)(?:date|time|at|deadline)(?:$|_)/i.test(normalized) ||
+    normalized.includes('dead_line')
+  );
+};
