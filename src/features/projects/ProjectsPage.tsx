@@ -27,6 +27,7 @@ import { queryClient } from '@/services/queryClient';
 import type { get200AdminProjectsResponseJson, getAdminProjectsQueryParams } from '@/share/utils/api/__generated__/types';
 import { PROJECTS_LIST } from '@/share/constants';
 import { clientRequest } from '@/share/utils/api/clientRequest';
+import moment from 'moment-jalaali';
 
 type ProjectRow = {
   id: number;
@@ -144,11 +145,34 @@ export const ProjectsPage = () => {
 
   const getDetailLabel = (key: string) => detailLabels[key] ?? `فیلد ${key.replace(/_/g, ' ')}`;
 
+  const dateKeys = new Set([
+    'created_at',
+    'updated_at',
+    'published_at',
+    'start_time',
+    'start_date',
+    'end_date',
+    'due_date',
+    'dead_line',
+    'deadline'
+  ]);
+
+  const formatPersianDate = (value: string) => {
+    const parsed = moment(value, moment.ISO_8601, true);
+    if (!parsed.isValid()) return value;
+
+    return parsed.format('jYYYY/jMM/jDD HH:mm');
+  };
+
   const formatDetailValue = (key: string, value: unknown) => {
     if (value === null || value === undefined || value === '') return '—';
 
     if (key === 'status' && typeof value === 'string') {
       return <StatusChip status={value as 'processing' | 'finished'} />;
+    }
+
+    if (typeof value === 'string' && dateKeys.has(key)) {
+      return formatPersianDate(value);
     }
 
     if (Array.isArray(value)) {
@@ -169,7 +193,7 @@ export const ProjectsPage = () => {
         <Stack spacing={0.75}>
           {entries.map(([childKey, childValue]) => (
             <Typography key={childKey} variant="body2" color="text.secondary">
-              {getDetailLabel(childKey)}: {childValue === null || childValue === undefined || childValue === '' ? '—' : String(childValue)}
+              {getDetailLabel(childKey)}: {formatDetailValue(childKey, childValue)}
             </Typography>
           ))}
         </Stack>
