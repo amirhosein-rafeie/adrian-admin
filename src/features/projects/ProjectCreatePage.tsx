@@ -1,10 +1,12 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Box, Button, Card, CardContent, Checkbox, Chip, Divider, FormControlLabel, FormGroup, MenuItem, Paper, Stack, Step, StepLabel, Stepper, TextField, Typography } from '@mui/material';
+import { Box, Button, Card, CardContent, Checkbox, Chip, Divider, FormControlLabel, FormGroup, MenuItem, Paper, Stack, Step, StepLabel, Stepper, TextField, Typography, useMediaQuery, useTheme } from '@mui/material';
 import { useMutation } from '@tanstack/react-query';
+import moment, { type Moment } from 'moment-jalaali';
 import { ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
+import CustomDatePicker from '@/components/CustomDatePicker';
 import { PageHeader } from '@/components/PageHeader';
 import { useSnackbar } from '@/hooks/useSnackbar';
 import { queryClient } from '@/services/queryClient';
@@ -201,6 +203,8 @@ const MediaUploadSection = ({
 );
 
 export const ProjectCreatePage = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [activeStep, setActiveStep] = useState(0);
   const [createdProjectId, setCreatedProjectId] = useState<number | null>(null);
   const [mediaFiles, setMediaFiles] = useState<Record<MediaType, File[]>>({ img: [], video: [], pdf: [] });
@@ -314,7 +318,7 @@ export const ProjectCreatePage = () => {
       <Card>
         <CardContent>
           <Stack spacing={3}>
-            <Stepper activeStep={activeStep} alternativeLabel>
+            <Stepper activeStep={activeStep} alternativeLabel={!isMobile} orientation={isMobile ? 'vertical' : 'horizontal'}>
               {steps.map((step) => (
                 <Step key={step}>
                   <StepLabel>{step}</StepLabel>
@@ -348,13 +352,20 @@ export const ProjectCreatePage = () => {
                         name="start_time"
                         control={form.control}
                         render={({ field }) => (
-                          <TextField
-                            {...field}
+                          <CustomDatePicker
+                            value={field.value ? moment(field.value, 'jYYYY/jMM/jDD') : null}
+                            onChange={(value: Moment | null) => {
+                              field.onChange(value ? value.format('jYYYY/jMM/jDD') : '');
+                            }}
                             label="تاریخ شروع (شمسی)"
-                            placeholder="۱۴۰۴/۰۱/۱۵"
-                            error={!!form.formState.errors.start_time}
-                            helperText={form.formState.errors.start_time?.message ?? 'فرمت: YYYY/MM/DD'}
-                            inputProps={{ dir: 'ltr' }}
+                            format="jYYYY/jMM/jDD"
+                            disabled={createMutation.isPending}
+                            slotProps={{
+                              textField: {
+                                error: !!form.formState.errors.start_time,
+                                helperText: form.formState.errors.start_time?.message ?? 'فرمت: YYYY/MM/DD'
+                              }
+                            }}
                           />
                         )}
                       />
@@ -362,13 +373,20 @@ export const ProjectCreatePage = () => {
                         name="dead_line"
                         control={form.control}
                         render={({ field }) => (
-                          <TextField
-                            {...field}
+                          <CustomDatePicker
+                            value={field.value ? moment(field.value, 'jYYYY/jMM/jDD') : null}
+                            onChange={(value: Moment | null) => {
+                              field.onChange(value ? value.format('jYYYY/jMM/jDD') : '');
+                            }}
                             label="ددلاین (شمسی)"
-                            placeholder="۱۴۰۴/۱۲/۲۹"
-                            error={!!form.formState.errors.dead_line}
-                            helperText={form.formState.errors.dead_line?.message ?? 'فرمت: YYYY/MM/DD'}
-                            inputProps={{ dir: 'ltr' }}
+                            format="jYYYY/jMM/jDD"
+                            disabled={createMutation.isPending}
+                            slotProps={{
+                              textField: {
+                                error: !!form.formState.errors.dead_line,
+                                helperText: form.formState.errors.dead_line?.message ?? 'فرمت: YYYY/MM/DD'
+                              }
+                            }}
                           />
                         )}
                       />
@@ -380,7 +398,7 @@ export const ProjectCreatePage = () => {
                         name="options"
                         control={form.control}
                         render={({ field }) => (
-                          <FormGroup row>
+                          <FormGroup sx={{ flexDirection: { xs: 'column', sm: 'row' } }}>
                             {projectOptions.map((option) => (
                               <FormControlLabel
                                 key={option.value}
@@ -422,7 +440,7 @@ export const ProjectCreatePage = () => {
                   </Stack>
                 </Paper>
 
-                <Stack direction="row" spacing={1} justifyContent="space-between">
+                <Stack direction={{ xs: 'column-reverse', sm: 'row' }} spacing={1} justifyContent="space-between">
                   <Button variant="outlined" onClick={() => navigate('/projects')}>انصراف</Button>
                   <Button type="submit" variant="contained" disabled={createMutation.isPending}>ایجاد پروژه و رفتن به استپ مدیا</Button>
                 </Stack>

@@ -1,58 +1,52 @@
-import {
-  DatePicker,
-  DatePickerProps,
-  MonthCalendar,
-} from "@mui/x-date-pickers";
+import { DatePicker, DatePickerProps } from '@mui/x-date-pickers';
+import type { Theme } from '@mui/material/styles';
+import type { Moment } from 'moment-jalaali';
 
-const CustomDatePicker = (props: DatePickerProps) => {
+const CustomDatePicker = (props: DatePickerProps<Moment>) => {
   return (
     <DatePicker
       {...props}
-      slots={{
-        monthButton: (props) => {
-          return (
-            <MonthCalendar {...props}>{props["aria-label"]}</MonthCalendar>
-          );
-        },
-      }}
       slotProps={{
         ...props?.slotProps,
         textField: {
+          fullWidth: true,
           sx: {
-            background: "white",
-            borderRadius: "0.3rem",
+            background: 'white',
+            borderRadius: '0.3rem'
           },
-          ...props.slotProps?.textField,
+          ...props.slotProps?.textField
         },
         layout: {
           ...props.slotProps?.layout,
           sx: {
-            direction: "ltr",
-            width: 350,
-            ".MuiPickersDay-root": {
+            direction: 'ltr',
+            width: { xs: '100%', sm: 350 },
+            maxWidth: '100%',
+            '.MuiPickersDay-root': {
               borderRadius: 1.5,
               borderWidth: 0,
-              border: "0px solid",
-              width: 50,
-              fontWeight: "900",
+              border: '0px solid',
+              width: { xs: 38, sm: 44 },
+              height: { xs: 38, sm: 44 },
+              fontWeight: '900'
             },
-            ".MuiDayCalendar-weekDayLabel": {
-              width: 50,
-              color: (theme) => theme.palette.primary.main,
+            '.MuiDayCalendar-weekDayLabel': {
+              width: { xs: 38, sm: 44 },
+              color: (theme: Theme) => theme.palette.primary.main,
               borderRadius: 0,
               borderWidth: 0,
-              border: "0px solid",
-              fontWeight: "bold",
-            },
-          },
-        },
+              border: '0px solid',
+              fontWeight: 'bold'
+            }
+          }
+        }
       }}
       localeText={{
-        fieldDayPlaceholder: () => "روز",
-        fieldMonthPlaceholder: () => "ماه",
-        fieldYearPlaceholder: () => "سال",
+        fieldDayPlaceholder: () => 'روز',
+        fieldMonthPlaceholder: () => 'ماه',
+        fieldYearPlaceholder: () => 'سال'
       }}
-      views={["year", "month", "day"]}
+      views={['year', 'month', 'day']}
       closeOnSelect={false}
     />
   );

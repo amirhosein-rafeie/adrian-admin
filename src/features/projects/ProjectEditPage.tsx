@@ -1,10 +1,12 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Box, Button, Card, CardContent, Checkbox, Chip, Divider, FormControlLabel, FormGroup, MenuItem, Paper, Stack, TextField, Typography } from '@mui/material';
 import { useMutation } from '@tanstack/react-query';
+import moment, { type Moment } from 'moment-jalaali';
 import { useEffect, useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { useNavigate, useParams } from 'react-router-dom';
 import { z } from 'zod';
+import CustomDatePicker from '@/components/CustomDatePicker';
 import { PageHeader } from '@/components/PageHeader';
 import { useSnackbar } from '@/hooks/useSnackbar';
 import { useProjectDetail } from '@/features/projects/useProjectDetail';
@@ -189,7 +191,7 @@ export const ProjectEditPage = () => {
   const renderMediaSection = (title: string, type: MediaType, accept: string) => (
     <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
       <Stack spacing={1.5}>
-        <Stack direction="row" justifyContent="space-between" alignItems="center">
+        <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'stretch', sm: 'center' }} spacing={1}>
           <Typography variant="subtitle2" fontWeight={700}>{title}</Typography>
           <Button variant="outlined" component="label" size="small" disabled={uploadMediaMutation.isPending || isPending}>
             افزودن فایل
@@ -245,14 +247,20 @@ export const ProjectEditPage = () => {
                 name="start_time"
                 control={form.control}
                 render={({ field }) => (
-                  <TextField
-                    {...field}
+                  <CustomDatePicker
+                    value={field.value ? moment(field.value, 'jYYYY/jMM/jDD') : null}
+                    onChange={(value: Moment | null) => {
+                      field.onChange(value ? value.format('jYYYY/jMM/jDD') : '');
+                    }}
                     label="تاریخ شروع (شمسی)"
-                    placeholder="۱۴۰۴/۰۱/۱۵"
-                    error={!!form.formState.errors.start_time}
-                    helperText={form.formState.errors.start_time?.message ?? 'فرمت: YYYY/MM/DD'}
+                    format="jYYYY/jMM/jDD"
                     disabled={isPending}
-                    inputProps={{ dir: 'ltr' }}
+                    slotProps={{
+                      textField: {
+                        error: !!form.formState.errors.start_time,
+                        helperText: form.formState.errors.start_time?.message ?? 'فرمت: YYYY/MM/DD'
+                      }
+                    }}
                   />
                 )}
               />
@@ -260,14 +268,20 @@ export const ProjectEditPage = () => {
                 name="dead_line"
                 control={form.control}
                 render={({ field }) => (
-                  <TextField
-                    {...field}
+                  <CustomDatePicker
+                    value={field.value ? moment(field.value, 'jYYYY/jMM/jDD') : null}
+                    onChange={(value: Moment | null) => {
+                      field.onChange(value ? value.format('jYYYY/jMM/jDD') : '');
+                    }}
                     label="ددلاین (شمسی)"
-                    placeholder="۱۴۰۴/۱۲/۲۹"
-                    error={!!form.formState.errors.dead_line}
-                    helperText={form.formState.errors.dead_line?.message ?? 'فرمت: YYYY/MM/DD'}
+                    format="jYYYY/jMM/jDD"
                     disabled={isPending}
-                    inputProps={{ dir: 'ltr' }}
+                    slotProps={{
+                      textField: {
+                        error: !!form.formState.errors.dead_line,
+                        helperText: form.formState.errors.dead_line?.message ?? 'فرمت: YYYY/MM/DD'
+                      }
+                    }}
                   />
                 )}
               />
@@ -282,7 +296,7 @@ export const ProjectEditPage = () => {
                 name="options"
                 control={form.control}
                 render={({ field }) => (
-                  <FormGroup row>
+                  <FormGroup sx={{ flexDirection: { xs: 'column', sm: 'row' } }}>
                     {projectOptions.map((option) => (
                       <FormControlLabel
                         key={option.value}
@@ -316,7 +330,7 @@ export const ProjectEditPage = () => {
             {renderMediaSection('ویدیوها', 'video', 'video/*')}
             {renderMediaSection('فایل‌های PDF', 'pdf', 'application/pdf')}
 
-            <Stack direction="row" spacing={1} justifyContent="space-between">
+            <Stack direction={{ xs: 'column-reverse', sm: 'row' }} spacing={1} justifyContent="space-between">
               <Button variant="outlined" onClick={() => navigate('/projects')}>انصراف</Button>
               <Button type="submit" variant="contained" disabled={isPending || updateMutation.isPending}>ذخیره تغییرات</Button>
             </Stack>
