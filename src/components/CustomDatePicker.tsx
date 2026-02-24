@@ -1,4 +1,4 @@
-import { DatePicker, DatePickerProps } from '@mui/x-date-pickers';
+import { DatePicker, DatePickerProps } from "@mui/x-date-pickers";
 const CustomDatePicker = (props: DatePickerProps) => {
   return (
     <DatePicker
@@ -7,41 +7,40 @@ const CustomDatePicker = (props: DatePickerProps) => {
         ...props?.slotProps,
         textField: {
           sx: {
-            backgroundColor: (theme) => theme.palette.grey[50],
-            borderRadius: '0.3rem'
+            borderRadius: "0.3rem",
           },
-          ...props.slotProps?.textField
+          ...props.slotProps?.textField,
         },
         layout: {
           ...props.slotProps?.layout,
           sx: {
             backgroundColor: (theme) => theme.palette.background.paper,
-            direction: 'ltr',
+            direction: "ltr",
             width: 350,
-            '.MuiPickersDay-root': {
+            ".MuiPickersDay-root": {
               borderRadius: 1.5,
               borderWidth: 0,
-              border: '0px solid',
+              border: "0px solid",
               width: 50,
-              fontWeight: '900'
+              fontWeight: "900",
             },
-            '.MuiDayCalendar-weekDayLabel': {
+            ".MuiDayCalendar-weekDayLabel": {
               width: 50,
               color: (theme) => theme.palette.primary.main,
               borderRadius: 0,
               borderWidth: 0,
-              border: '0px solid',
-              fontWeight: 'bold'
-            }
-          }
-        }
+              border: "0px solid",
+              fontWeight: "bold",
+            },
+          },
+        },
       }}
       localeText={{
-        fieldDayPlaceholder: () => 'روز',
-        fieldMonthPlaceholder: () => 'ماه',
-        fieldYearPlaceholder: () => 'سال'
+        fieldDayPlaceholder: () => "روز",
+        fieldMonthPlaceholder: () => "ماه",
+        fieldYearPlaceholder: () => "سال",
       }}
-      views={['year', 'month', 'day']}
+      views={["year", "month", "day"]}
       closeOnSelect
     />
   );
