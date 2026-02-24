@@ -27,6 +27,7 @@ import { queryClient } from '@/services/queryClient';
 import type { get200AdminProjectsResponseJson, getAdminProjectsQueryParams } from '@/share/utils/api/__generated__/types';
 import { PROJECTS_LIST } from '@/share/constants';
 import { clientRequest } from '@/share/utils/api/clientRequest';
+import moment from 'moment-jalaali';
 
 type ProjectRow = {
   id: number;
@@ -144,11 +145,53 @@ export const ProjectsPage = () => {
 
   const getDetailLabel = (key: string) => detailLabels[key] ?? `فیلد ${key.replace(/_/g, ' ')}`;
 
+  const dateOnlyKeys = new Set([
+    'start_time',
+    'start_date',
+    'end_date',
+    'due_date',
+    'dead_line',
+    'deadline'
+  ]);
+
+  const dateTimeKeys = new Set([
+    'created_at',
+    'updated_at',
+    'published_at'
+  ]);
+
+  const normalizeDigits = (value: string) => value.replace(/[۰-۹]/g, (char) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(char)));
+
+  const formatPersianDate = (key: string, value: string) => {
+    const normalized = normalizeDigits(String(value)).trim();
+
+    const jalaliParsed = moment(normalized, ['jYYYY/jMM/jDD', 'jYYYY/jM/jD'], true);
+    if (jalaliParsed.isValid()) {
+      return dateTimeKeys.has(key) ? jalaliParsed.format('jYYYY/jMM/jDD HH:mm') : jalaliParsed.format('jYYYY/jMM/jDD');
+    }
+
+    const parsed = moment(normalized, [
+      moment.ISO_8601,
+      'YYYY-MM-DD',
+      'YYYY/MM/DD',
+      'YYYY-MM-DD HH:mm:ss',
+      'YYYY/MM/DD HH:mm:ss'
+    ], true);
+
+    if (!parsed.isValid()) return value;
+
+    return dateOnlyKeys.has(key) ? parsed.format('jYYYY/jMM/jDD') : parsed.format('jYYYY/jMM/jDD HH:mm');
+  };
+
   const formatDetailValue = (key: string, value: unknown) => {
     if (value === null || value === undefined || value === '') return '—';
 
     if (key === 'status' && typeof value === 'string') {
       return <StatusChip status={value as 'processing' | 'finished'} />;
+    }
+
+    if (typeof value === 'string' && (dateOnlyKeys.has(key) || dateTimeKeys.has(key))) {
+      return formatPersianDate(key, value);
     }
 
     if (Array.isArray(value)) {
@@ -169,7 +212,7 @@ export const ProjectsPage = () => {
         <Stack spacing={0.75}>
           {entries.map(([childKey, childValue]) => (
             <Typography key={childKey} variant="body2" color="text.secondary">
-              {getDetailLabel(childKey)}: {childValue === null || childValue === undefined || childValue === '' ? '—' : String(childValue)}
+              {getDetailLabel(childKey)}: {formatDetailValue(childKey, childValue)}
             </Typography>
           ))}
         </Stack>
@@ -243,18 +286,40 @@ export const ProjectsPage = () => {
             <Divider />
             <Grid container spacing={2} p={2.5}>
               {detail
-                ? Object.entries(detail).map(([key, value]) => (
-                    <Grid key={key} item xs={12} sm={6}>
-                      <Stack spacing={0.75}>
-                        <Typography variant="caption" color="text.secondary" fontWeight={700}>
-                          {getDetailLabel(key)}
-                        </Typography>
-                        <Typography variant="body2" component="div">
-                          {formatDetailValue(key, value)}
-                        </Typography>
-                      </Stack>
-                    </Grid>
-                  ))
+                ? (() => {
+                    const preferredOrder = [
+                      'id',
+                      'name',
+                      'status',
+                      'start_time',
+                      'dead_line',
+                      'deadline',
+                      'created_at',
+                      'updated_at'
+                    ];
+
+                    const entries = Object.entries(detail);
+                    const remainingEntries = entries.filter(([key]) => !preferredOrder.includes(key));
+                    const orderedEntries: Array<[string, unknown]> = [
+                      ...preferredOrder
+                        .filter((key) => Object.prototype.hasOwnProperty.call(detail, key))
+                        .map((key) => [key, detail[key]] as [string, unknown]),
+                      ...remainingEntries
+                    ];
+
+                    return orderedEntries.map(([key, value]) => (
+                      <Grid key={key} item xs={12} sm={6}>
+                        <Stack spacing={0.75}>
+                          <Typography variant="caption" color="text.secondary" fontWeight={700}>
+                            {getDetailLabel(key)}
+                          </Typography>
+                          <Typography variant="body2" component="div">
+                            {formatDetailValue(key, value)}
+                          </Typography>
+                        </Stack>
+                      </Grid>
+                    ));
+                  })()
                 : null}
             </Grid>
           </Paper>
