@@ -1,5 +1,5 @@
 import { DataGrid, DataGridProps, GridColDef } from '@mui/x-data-grid';
-import { Box, Skeleton } from '@mui/material';
+import { Box, Skeleton, useMediaQuery, useTheme } from '@mui/material';
 import { useMemo } from 'react';
 
 const faLocaleText = {
@@ -53,9 +53,13 @@ const faLocaleText = {
 };
 
 export const DataTable = (props: DataGridProps) => {
+  const { columns: inputColumns, sx: customSx, ...restProps } = props;
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
   const columns = useMemo(
     () =>
-      (props.columns ?? []).map((column) => {
+      (inputColumns ?? []).map((column) => {
         const col = column as GridColDef;
         if (!col.field.includes('created_at') || col.valueFormatter) return col;
 
@@ -73,11 +77,28 @@ export const DataTable = (props: DataGridProps) => {
           }
         } as GridColDef;
       }),
-    [props.columns]
+    [inputColumns]
+  );
+
+  const responsiveColumns = useMemo(
+    () =>
+      columns.map((column) => {
+        const col = column as GridColDef;
+        if (!isMobile) return col;
+
+        const minWidth = typeof col.minWidth === 'number' ? Math.min(col.minWidth, 110) : 90;
+        return {
+          ...col,
+          width: undefined,
+          minWidth,
+          flex: col.flex ?? 1
+        } as GridColDef;
+      }),
+    [columns, isMobile]
   );
 
   return (
-    <Box sx={{ width: '100%', overflowX: 'auto' }}>
+    <Box sx={{ width: '100%', maxWidth: '100%', overflowX: 'hidden' }}>
       <Box sx={{ width: '100%', minWidth: 0, height: 520 }}>
         {props.loading ? (
           <Skeleton variant="rounded" height={520} />
@@ -87,9 +108,23 @@ export const DataTable = (props: DataGridProps) => {
             pageSizeOptions={[5, 10, 20]}
             localeText={faLocaleText}
             initialState={{ pagination: { paginationModel: { pageSize: 10, page: 0 } } }}
-            sx={{ minWidth: { xs: 760, md: 0 } }}
-            {...props}
-            columns={columns}
+            sx={[
+              {
+                minWidth: 0,
+                '& .MuiDataGrid-cell, & .MuiDataGrid-columnHeaderTitle': {
+                  fontSize: { xs: '0.75rem', sm: '0.875rem' }
+                },
+                '& .MuiDataGrid-columnHeader, & .MuiDataGrid-cell': {
+                  px: { xs: 1, sm: 1.5 }
+                },
+                '& .MuiDataGrid-main': {
+                  overflowX: 'hidden'
+                }
+              },
+              ...(Array.isArray(customSx) ? customSx : [customSx])
+            ]}
+            {...restProps}
+            columns={responsiveColumns}
           />
         )}
       </Box>
