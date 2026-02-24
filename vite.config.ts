@@ -9,4 +9,17 @@ export default defineConfig({
       "@": fileURLToPath(new URL("./src", import.meta.url)),
     },
   },
+  build: {
+    sourcemap: false,
+    chunkSizeWarningLimit: 1200,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          react: ["react", "react-dom", "react-router-dom"],
+          mui: ["@mui/material", "@mui/icons-material", "@mui/x-data-grid", "@mui/x-date-pickers"],
+          query: ["@tanstack/react-query"],
+        },
+      },
+    },
+  },
 });

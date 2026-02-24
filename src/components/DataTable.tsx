@@ -1,6 +1,7 @@
 import { DataGrid, DataGridProps, GridColDef } from '@mui/x-data-grid';
 import { Box, Skeleton, useMediaQuery, useTheme } from '@mui/material';
 import { useMemo } from 'react';
+import { formatDateToJalali, isDateLikeField } from '@/share/utils/jalaliDate';
 
 const faLocaleText = {
   noRowsLabel: 'داده‌ای موجود نیست',
@@ -61,20 +62,11 @@ export const DataTable = (props: DataGridProps) => {
     () =>
       (inputColumns ?? []).map((column) => {
         const col = column as GridColDef;
-        if (!col.field.includes('created_at') || col.valueFormatter) return col;
+        if (!isDateLikeField(col.field) || col.valueFormatter) return col;
 
         return {
           ...col,
-          valueFormatter: (value: string) => {
-            if (!value) return '-';
-            const date = new Date(value);
-            if (Number.isNaN(date.getTime())) return value;
-            return new Intl.DateTimeFormat('fa-IR-u-ca-persian', {
-              year: 'numeric',
-              month: '2-digit',
-              day: '2-digit'
-            }).format(date);
-          }
+          valueFormatter: (value: string) => formatDateToJalali(value, value || '—')
         } as GridColDef;
       }),
     [inputColumns]
@@ -86,19 +78,20 @@ export const DataTable = (props: DataGridProps) => {
         const col = column as GridColDef;
         if (!isMobile) return col;
 
-        const minWidth = typeof col.minWidth === 'number' ? Math.min(col.minWidth, 110) : 90;
+        const minWidth = typeof col.minWidth === 'number' ? Math.min(col.minWidth, 120) : 95;
         return {
           ...col,
           width: undefined,
           minWidth,
-          flex: col.flex ?? 1
+          flex: col.flex ?? 1,
+          sortable: col.sortable ?? false
         } as GridColDef;
       }),
     [columns, isMobile]
   );
 
   return (
-    <Box sx={{ width: '100%', maxWidth: '100%', overflowX: 'hidden' }}>
+    <Box sx={{ width: '100%', maxWidth: '100%', overflowX: 'auto' }}>
       <Box sx={{ width: '100%', minWidth: 0, height: 520 }}>
         {props.loading ? (
           <Skeleton variant="rounded" height={520} />
@@ -108,6 +101,7 @@ export const DataTable = (props: DataGridProps) => {
             pageSizeOptions={[5, 10, 20]}
             localeText={faLocaleText}
             initialState={{ pagination: { paginationModel: { pageSize: 10, page: 0 } } }}
+            density={isMobile ? 'compact' : 'standard'}
             sx={[
               {
                 minWidth: 0,
@@ -118,7 +112,10 @@ export const DataTable = (props: DataGridProps) => {
                   px: { xs: 1, sm: 1.5 }
                 },
                 '& .MuiDataGrid-main': {
-                  overflowX: 'hidden'
+                  overflowX: 'auto'
+                },
+                '& .MuiDataGrid-columnHeaders': {
+                  minHeight: { xs: 42, sm: 56 }
                 }
               },
               ...(Array.isArray(customSx) ? customSx : [customSx])
