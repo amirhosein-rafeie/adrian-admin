@@ -1,25 +1,12 @@
-import {
-  DatePicker,
-  DatePickerProps,
-  MonthCalendar,
-} from "@mui/x-date-pickers";
-
+import { DatePicker, DatePickerProps } from "@mui/x-date-pickers";
 const CustomDatePicker = (props: DatePickerProps) => {
   return (
     <DatePicker
       {...props}
-      slots={{
-        monthButton: (props) => {
-          return (
-            <MonthCalendar {...props}>{props["aria-label"]}</MonthCalendar>
-          );
-        },
-      }}
       slotProps={{
         ...props?.slotProps,
         textField: {
           sx: {
-            background: "white",
             borderRadius: "0.3rem",
           },
           ...props.slotProps?.textField,
@@ -27,6 +14,7 @@ const CustomDatePicker = (props: DatePickerProps) => {
         layout: {
           ...props.slotProps?.layout,
           sx: {
+            backgroundColor: (theme) => theme.palette.background.paper,
             direction: "ltr",
             width: 350,
             ".MuiPickersDay-root": {
@@ -53,7 +41,7 @@ const CustomDatePicker = (props: DatePickerProps) => {
         fieldYearPlaceholder: () => "سال",
       }}
       views={["year", "month", "day"]}
-      closeOnSelect={false}
+      closeOnSelect
     />
   );
 };

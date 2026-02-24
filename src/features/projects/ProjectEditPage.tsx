@@ -5,6 +5,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { useNavigate, useParams } from 'react-router-dom';
 import { z } from 'zod';
+import moment, { Moment } from 'moment-jalaali';
+import CustomDatePicker from '@/components/CustomDatePicker';
 import { PageHeader } from '@/components/PageHeader';
 import { useSnackbar } from '@/hooks/useSnackbar';
 import { useProjectDetail } from '@/features/projects/useProjectDetail';
@@ -337,15 +339,18 @@ export const ProjectEditPage = () => {
                 name="start_time"
                 control={form.control}
                 render={({ field }) => (
-                  <TextField
-                    {...field}
+                  <CustomDatePicker
                     label="تاریخ شروع (شمسی)"
-                    placeholder="۱۴۰۴/۰۱/۱۵"
-                    error={!!form.formState.errors.start_time}
-                    helperText={form.formState.errors.start_time?.message ?? 'فرمت: YYYY/MM/DD'}
+                    value={field.value ? moment(field.value, 'jYYYY/jMM/jDD', true) : null}
+                    onChange={(value: Moment | null) => field.onChange(value?.isValid() ? value.format('jYYYY/jMM/jDD') : '')}
                     disabled={isPending}
-                    inputProps={{ dir: 'ltr' }}
-                    InputLabelProps={floatingLabelProps}
+                    slotProps={{
+                      textField: {
+                        error: !!form.formState.errors.start_time,
+                        helperText: form.formState.errors.start_time?.message ?? 'فرمت: YYYY/MM/DD',
+                        InputLabelProps: floatingLabelProps
+                      }
+                    }}
                   />
                 )}
               />
@@ -353,15 +358,18 @@ export const ProjectEditPage = () => {
                 name="dead_line"
                 control={form.control}
                 render={({ field }) => (
-                  <TextField
-                    {...field}
+                  <CustomDatePicker
                     label="ددلاین (شمسی)"
-                    placeholder="۱۴۰۴/۱۲/۲۹"
-                    error={!!form.formState.errors.dead_line}
-                    helperText={form.formState.errors.dead_line?.message ?? 'فرمت: YYYY/MM/DD'}
+                    value={field.value ? moment(field.value, 'jYYYY/jMM/jDD', true) : null}
+                    onChange={(value: Moment | null) => field.onChange(value?.isValid() ? value.format('jYYYY/jMM/jDD') : '')}
                     disabled={isPending}
-                    inputProps={{ dir: 'ltr' }}
-                    InputLabelProps={floatingLabelProps}
+                    slotProps={{
+                      textField: {
+                        error: !!form.formState.errors.dead_line,
+                        helperText: form.formState.errors.dead_line?.message ?? 'فرمت: YYYY/MM/DD',
+                        InputLabelProps: floatingLabelProps
+                      }
+                    }}
                   />
                 )}
               />
