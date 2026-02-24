@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Box, Button, Card, CardContent, Checkbox, Chip, Divider, FormControlLabel, FormGroup, MenuItem, Paper, Stack, TextField, Typography } from '@mui/material';
 import { useMutation } from '@tanstack/react-query';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { useNavigate, useParams } from 'react-router-dom';
 import { z } from 'zod';
@@ -29,6 +29,10 @@ const schema = z.object({
   price: z.string().min(1, 'قیمت الزامی است'),
   price_currency: z.string().min(1, 'واحد قیمت الزامی است'),
   token_count: z.coerce.number().min(1, 'تعداد توکن باید حداقل ۱ باشد'),
+  token_sold: z.preprocess((value) => {
+    if (value === '' || value === null || value === undefined) return undefined;
+    return value;
+  }, z.coerce.number().min(0, 'تعداد توکن فروخته‌شده نمی‌تواند منفی باشد').optional()),
   token_name: z.string().min(2, 'نام توکن الزامی است'),
   sale_price_per_meter: optionalString,
   token_price_toman: optionalString,
@@ -58,6 +62,89 @@ const projectOptions: { value: FormValues['options'][number]; label: string }[] 
   { value: 'no_elevator_required', label: 'عدم نیاز به آسانسور' }
 ];
 
+
+const parseLocation = (value: string): { lat: number; lng: number } | null => {
+  const [latRaw, lngRaw] = value.trim().split(/\s+/);
+  const lat = Number(latRaw);
+  const lng = Number(lngRaw);
+  if (Number.isFinite(lat) && Number.isFinite(lng)) return { lat, lng };
+  return null;
+};
+
+const MapLocationPicker = ({ value, onChange }: { value: string; onChange: (value: string) => void }) => {
+  const mapElementRef = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<any>(null);
+  const markerRef = useRef<any>(null);
+
+  const fallback = parseLocation(value) ?? { lat: 35.6892, lng: 51.389 };
+
+  useEffect(() => {
+    let mounted = true;
+
+    const initMap = async () => {
+      if (!mapElementRef.current) return;
+
+      if (!(window as any).L) {
+        const css = document.createElement('link');
+        css.rel = 'stylesheet';
+        css.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+        document.head.appendChild(css);
+
+        await new Promise<void>((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+          script.onload = () => resolve();
+          script.onerror = () => reject(new Error('لود نقشه ناموفق بود'));
+          document.body.appendChild(script);
+        });
+      }
+
+      if (!mounted || !(window as any).L) return;
+
+      const L = (window as any).L;
+      mapRef.current = L.map(mapElementRef.current).setView([fallback.lat, fallback.lng], 13);
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(mapRef.current);
+
+      markerRef.current = L.marker([fallback.lat, fallback.lng]).addTo(mapRef.current);
+      mapRef.current.on('click', (event: any) => {
+        const { lat, lng } = event.latlng;
+        markerRef.current.setLatLng([lat, lng]);
+        onChange(`${lat.toFixed(6)} ${lng.toFixed(6)}`);
+      });
+    };
+
+    void initMap();
+
+    return () => {
+      mounted = false;
+      if (mapRef.current) mapRef.current.remove();
+      mapRef.current = null;
+      markerRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    const parsed = parseLocation(value);
+    if (!parsed || !mapRef.current || !markerRef.current) return;
+    markerRef.current.setLatLng([parsed.lat, parsed.lng]);
+    mapRef.current.setView([parsed.lat, parsed.lng], mapRef.current.getZoom());
+  }, [value]);
+
+  return (
+    <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+      <Stack spacing={1.5}>
+        <Typography variant="subtitle1" fontWeight={700}>انتخاب لوکیشن روی نقشه</Typography>
+        <Typography variant="caption" color="text.secondary">روی نقشه کلیک کنید تا مختصات در فرم ثبت شود.</Typography>
+        <Box ref={mapElementRef} sx={{ width: '100%', height: 320, borderRadius: 1, overflow: 'hidden' }} />
+      </Stack>
+    </Paper>
+  );
+};
+
 export const ProjectEditPage = () => {
   const { id } = useParams();
   const projectId = Number(id);
@@ -76,6 +163,7 @@ export const ProjectEditPage = () => {
       price: '',
       price_currency: 'IRR',
       token_count: 1,
+      token_sold: 0,
       token_name: '',
       sale_price_per_meter: '',
       token_price_toman: '',
@@ -90,6 +178,7 @@ export const ProjectEditPage = () => {
 
   const { data, isPending } = useProjectDetail(projectId);
   const floatingLabelProps = { shrink: true } as const;
+  const locationValue = form.watch('location');
 
   useEffect(() => {
     const payload = data?.data as any;
@@ -105,6 +194,7 @@ export const ProjectEditPage = () => {
       price: project.price ?? '',
       price_currency: project.price_currency ?? 'IRR',
       token_count: Number(project.token_count ?? 1),
+      token_sold: project.token_sold ?? 0,
       token_name: project.token_name ?? '',
       sale_price_per_meter: project.sale_price_per_meter ?? '',
       token_price_toman: project.token_price_toman ?? '',
@@ -237,6 +327,7 @@ export const ProjectEditPage = () => {
               <TextField label="قیمت" InputLabelProps={floatingLabelProps} {...form.register('price')} error={!!form.formState.errors.price} helperText={form.formState.errors.price?.message} disabled={isPending} />
               <TextField label="واحد قیمت" InputLabelProps={floatingLabelProps} {...form.register('price_currency')} error={!!form.formState.errors.price_currency} helperText={form.formState.errors.price_currency?.message} disabled={isPending} />
               <TextField type="number" label="تعداد توکن" InputLabelProps={floatingLabelProps} {...form.register('token_count')} error={!!form.formState.errors.token_count} helperText={form.formState.errors.token_count?.message} disabled={isPending} />
+              <TextField type="number" label="توکن فروخته‌شده" InputLabelProps={floatingLabelProps} {...form.register('token_sold')} error={!!form.formState.errors.token_sold} helperText={form.formState.errors.token_sold?.message ?? 'اختیاری'} disabled={isPending} />
               <TextField label="نام توکن" InputLabelProps={floatingLabelProps} {...form.register('token_name')} error={!!form.formState.errors.token_name} helperText={form.formState.errors.token_name?.message} disabled={isPending} />
               <TextField label="قیمت فروش هر متر ملک" InputLabelProps={floatingLabelProps} {...form.register('sale_price_per_meter')} error={!!form.formState.errors.sale_price_per_meter} helperText={form.formState.errors.sale_price_per_meter?.message ?? 'اختیاری'} disabled={isPending} />
               <TextField label="قیمت هر توکن (تومان)" InputLabelProps={floatingLabelProps} {...form.register('token_price_toman')} error={!!form.formState.errors.token_price_toman} helperText={form.formState.errors.token_price_toman?.message ?? 'اختیاری'} disabled={isPending} />
@@ -276,7 +367,24 @@ export const ProjectEditPage = () => {
               />
             </Box>
 
-            <TextField label="موقعیت (lat lng)" InputLabelProps={floatingLabelProps} {...form.register('location')} error={!!form.formState.errors.location} helperText={form.formState.errors.location?.message} disabled={isPending} />
+            <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+              <Stack spacing={2}>
+                <Typography variant="subtitle1" fontWeight={700}>لوکیشن پروژه</Typography>
+                <TextField
+                  label="مختصات (lat lng)"
+                  InputLabelProps={floatingLabelProps}
+                  value={locationValue}
+                  onChange={(event) => form.setValue('location', event.target.value, { shouldValidate: true, shouldDirty: true })}
+                  error={!!form.formState.errors.location}
+                  helperText={form.formState.errors.location?.message ?? 'روی نقشه کلیک کنید یا دستی وارد کنید'}
+                  disabled={isPending}
+                />
+                <MapLocationPicker
+                  value={locationValue}
+                  onChange={(value) => form.setValue('location', value, { shouldValidate: true, shouldDirty: true })}
+                />
+              </Stack>
+            </Paper>
             <TextField label="توضیحات" InputLabelProps={floatingLabelProps} {...form.register('description')} error={!!form.formState.errors.description} helperText={form.formState.errors.description?.message} multiline minRows={3} disabled={isPending} />
 
             <Stack spacing={1}>
