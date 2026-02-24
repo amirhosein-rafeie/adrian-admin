@@ -27,6 +27,7 @@ import { queryClient } from '@/services/queryClient';
 import type { get200AdminProjectsResponseJson, getAdminProjectsQueryParams } from '@/share/utils/api/__generated__/types';
 import { PROJECTS_LIST } from '@/share/constants';
 import { clientRequest } from '@/share/utils/api/clientRequest';
+import { gregorianToJalali } from '@/share/utils/jalaliDate';
 
 type ProjectRow = {
   id: number;
@@ -144,8 +145,17 @@ export const ProjectsPage = () => {
 
   const getDetailLabel = (key: string) => detailLabels[key] ?? `فیلد ${key.replace(/_/g, ' ')}`;
 
+  const formatProjectDate = (value: string) => {
+    const jalaliDate = gregorianToJalali(value);
+    return jalaliDate || value;
+  };
+
   const formatDetailValue = (key: string, value: unknown) => {
     if (value === null || value === undefined || value === '') return '—';
+
+    if (typeof value === 'string' && ['start_date', 'end_date', 'due_date', 'created_at', 'updated_at', 'published_at'].includes(key)) {
+      return formatProjectDate(value);
+    }
 
     if (key === 'status' && typeof value === 'string') {
       return <StatusChip status={value as 'processing' | 'finished'} />;
