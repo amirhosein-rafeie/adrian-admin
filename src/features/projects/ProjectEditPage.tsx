@@ -89,6 +89,7 @@ export const ProjectEditPage = () => {
   });
 
   const { data, isPending } = useProjectDetail(projectId);
+  const floatingLabelProps = { shrink: true } as const;
 
   useEffect(() => {
     const payload = data?.data as any;
@@ -226,21 +227,21 @@ export const ProjectEditPage = () => {
         <CardContent>
           <Stack spacing={3} component="form" onSubmit={onSubmit}>
             <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
-              <TextField label="نام پروژه" {...form.register('name')} error={!!form.formState.errors.name} helperText={form.formState.errors.name?.message} disabled={isPending} />
+              <TextField label="نام پروژه" InputLabelProps={floatingLabelProps} {...form.register('name')} error={!!form.formState.errors.name} helperText={form.formState.errors.name?.message} disabled={isPending} />
               <TextField select label="وضعیت" {...form.register('status')} disabled={isPending}>
                 <MenuItem value="processing">در حال پردازش</MenuItem>
                 <MenuItem value="finished">تکمیل‌شده</MenuItem>
               </TextField>
-              <TextField label="آدرس" {...form.register('address')} error={!!form.formState.errors.address} helperText={form.formState.errors.address?.message} disabled={isPending} />
-              <TextField label="پیمانکار" {...form.register('contractor')} error={!!form.formState.errors.contractor} helperText={form.formState.errors.contractor?.message} disabled={isPending} />
-              <TextField label="قیمت" {...form.register('price')} error={!!form.formState.errors.price} helperText={form.formState.errors.price?.message} disabled={isPending} />
-              <TextField label="واحد قیمت" {...form.register('price_currency')} error={!!form.formState.errors.price_currency} helperText={form.formState.errors.price_currency?.message} disabled={isPending} />
-              <TextField type="number" label="تعداد توکن" {...form.register('token_count')} error={!!form.formState.errors.token_count} helperText={form.formState.errors.token_count?.message} disabled={isPending} />
-              <TextField label="نام توکن" {...form.register('token_name')} error={!!form.formState.errors.token_name} helperText={form.formState.errors.token_name?.message} disabled={isPending} />
-              <TextField label="قیمت فروش هر متر ملک" {...form.register('sale_price_per_meter')} error={!!form.formState.errors.sale_price_per_meter} helperText={form.formState.errors.sale_price_per_meter?.message ?? 'اختیاری'} disabled={isPending} />
-              <TextField label="قیمت هر توکن (تومان)" {...form.register('token_price_toman')} error={!!form.formState.errors.token_price_toman} helperText={form.formState.errors.token_price_toman?.message ?? 'اختیاری'} disabled={isPending} />
-              <TextField label="قیمت هر متر به توکن" {...form.register('price_per_meter_token')} error={!!form.formState.errors.price_per_meter_token} helperText={form.formState.errors.price_per_meter_token?.message ?? 'اختیاری'} disabled={isPending} />
-              <TextField label="درصد سود پیش‌بینی‌شده" {...form.register('estimated_profit_percentage')} error={!!form.formState.errors.estimated_profit_percentage} helperText={form.formState.errors.estimated_profit_percentage?.message ?? 'اختیاری'} disabled={isPending} />
+              <TextField label="آدرس" InputLabelProps={floatingLabelProps} {...form.register('address')} error={!!form.formState.errors.address} helperText={form.formState.errors.address?.message} disabled={isPending} />
+              <TextField label="پیمانکار" InputLabelProps={floatingLabelProps} {...form.register('contractor')} error={!!form.formState.errors.contractor} helperText={form.formState.errors.contractor?.message} disabled={isPending} />
+              <TextField label="قیمت" InputLabelProps={floatingLabelProps} {...form.register('price')} error={!!form.formState.errors.price} helperText={form.formState.errors.price?.message} disabled={isPending} />
+              <TextField label="واحد قیمت" InputLabelProps={floatingLabelProps} {...form.register('price_currency')} error={!!form.formState.errors.price_currency} helperText={form.formState.errors.price_currency?.message} disabled={isPending} />
+              <TextField type="number" label="تعداد توکن" InputLabelProps={floatingLabelProps} {...form.register('token_count')} error={!!form.formState.errors.token_count} helperText={form.formState.errors.token_count?.message} disabled={isPending} />
+              <TextField label="نام توکن" InputLabelProps={floatingLabelProps} {...form.register('token_name')} error={!!form.formState.errors.token_name} helperText={form.formState.errors.token_name?.message} disabled={isPending} />
+              <TextField label="قیمت فروش هر متر ملک" InputLabelProps={floatingLabelProps} {...form.register('sale_price_per_meter')} error={!!form.formState.errors.sale_price_per_meter} helperText={form.formState.errors.sale_price_per_meter?.message ?? 'اختیاری'} disabled={isPending} />
+              <TextField label="قیمت هر توکن (تومان)" InputLabelProps={floatingLabelProps} {...form.register('token_price_toman')} error={!!form.formState.errors.token_price_toman} helperText={form.formState.errors.token_price_toman?.message ?? 'اختیاری'} disabled={isPending} />
+              <TextField label="قیمت هر متر به توکن" InputLabelProps={floatingLabelProps} {...form.register('price_per_meter_token')} error={!!form.formState.errors.price_per_meter_token} helperText={form.formState.errors.price_per_meter_token?.message ?? 'اختیاری'} disabled={isPending} />
+              <TextField label="درصد سود پیش‌بینی‌شده" InputLabelProps={floatingLabelProps} {...form.register('estimated_profit_percentage')} error={!!form.formState.errors.estimated_profit_percentage} helperText={form.formState.errors.estimated_profit_percentage?.message ?? 'اختیاری'} disabled={isPending} />
               <Controller
                 name="start_time"
                 control={form.control}
@@ -253,6 +254,7 @@ export const ProjectEditPage = () => {
                     helperText={form.formState.errors.start_time?.message ?? 'فرمت: YYYY/MM/DD'}
                     disabled={isPending}
                     inputProps={{ dir: 'ltr' }}
+                    InputLabelProps={floatingLabelProps}
                   />
                 )}
               />
@@ -268,13 +270,14 @@ export const ProjectEditPage = () => {
                     helperText={form.formState.errors.dead_line?.message ?? 'فرمت: YYYY/MM/DD'}
                     disabled={isPending}
                     inputProps={{ dir: 'ltr' }}
+                    InputLabelProps={floatingLabelProps}
                   />
                 )}
               />
             </Box>
 
-            <TextField label="موقعیت (lat lng)" {...form.register('location')} error={!!form.formState.errors.location} helperText={form.formState.errors.location?.message} disabled={isPending} />
-            <TextField label="توضیحات" {...form.register('description')} error={!!form.formState.errors.description} helperText={form.formState.errors.description?.message} multiline minRows={3} disabled={isPending} />
+            <TextField label="موقعیت (lat lng)" InputLabelProps={floatingLabelProps} {...form.register('location')} error={!!form.formState.errors.location} helperText={form.formState.errors.location?.message} disabled={isPending} />
+            <TextField label="توضیحات" InputLabelProps={floatingLabelProps} {...form.register('description')} error={!!form.formState.errors.description} helperText={form.formState.errors.description?.message} multiline minRows={3} disabled={isPending} />
 
             <Stack spacing={1}>
               <Typography variant="subtitle2" fontWeight={700}>امکانات پروژه</Typography>
