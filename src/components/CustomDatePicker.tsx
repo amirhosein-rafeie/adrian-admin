@@ -7,7 +7,7 @@ const CustomDatePicker = (props: DatePickerProps) => {
         ...props?.slotProps,
         textField: {
           sx: {
-            background: 'white',
+            backgroundColor: (theme) => theme.palette.grey[50],
             borderRadius: '0.3rem'
           },
           ...props.slotProps?.textField
@@ -15,6 +15,7 @@ const CustomDatePicker = (props: DatePickerProps) => {
         layout: {
           ...props.slotProps?.layout,
           sx: {
+            backgroundColor: (theme) => theme.palette.background.paper,
             direction: 'ltr',
             width: 350,
             '.MuiPickersDay-root': {
