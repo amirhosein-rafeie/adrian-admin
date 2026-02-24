@@ -1,3 +1,4 @@
+import { TextField } from '@mui/material';
 import { DatePicker, DatePickerProps } from '@mui/x-date-pickers';
 import type { SxProps } from '@mui/material/styles';
 import type { Theme } from '@mui/material/styles';
@@ -11,6 +12,11 @@ const CustomDatePicker = (props: DatePickerProps<Moment>) => {
   return (
     <DatePicker
       {...props}
+      slots={{
+        ...props.slots,
+        textField: TextField
+      }}
+      enableAccessibleFieldDOMStructure={false}
       slotProps={{
         ...props?.slotProps,
         textField: {
