@@ -76,7 +76,15 @@ export const DataTable = (props: DataGridProps) => {
     () =>
       columns.map((column) => {
         const col = column as GridColDef;
-        if (!isMobile) return col;
+        if (!isMobile) {
+          const width = typeof col.width === 'number' ? col.width : undefined;
+          return {
+            ...col,
+            width: undefined,
+            minWidth: typeof col.minWidth === 'number' ? col.minWidth : Math.min(width ?? 160, 220),
+            flex: col.flex ?? 1
+          } as GridColDef;
+        }
 
         const minWidth = typeof col.minWidth === 'number' ? Math.min(col.minWidth, 120) : 95;
         return {
@@ -91,7 +99,7 @@ export const DataTable = (props: DataGridProps) => {
   );
 
   return (
-    <Box sx={{ width: '100%', maxWidth: '100%', overflowX: 'auto' }}>
+    <Box sx={{ width: '100%', maxWidth: '100%', overflowX: { xs: 'auto', md: 'hidden' } }}>
       <Box sx={{ width: '100%', minWidth: 0, height: 520 }}>
         {props.loading ? (
           <Skeleton variant="rounded" height={520} />
@@ -112,7 +120,7 @@ export const DataTable = (props: DataGridProps) => {
                   px: { xs: 1, sm: 1.5 }
                 },
                 '& .MuiDataGrid-main': {
-                  overflowX: 'auto'
+                  overflowX: { xs: 'auto', md: 'hidden' }
                 },
                 '& .MuiDataGrid-columnHeaders': {
                   minHeight: { xs: 42, sm: 56 }

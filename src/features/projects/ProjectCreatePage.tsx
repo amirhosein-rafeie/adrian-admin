@@ -568,6 +568,7 @@ export const ProjectCreatePage = () => {
                       />
                       <TextField
                         label="درصد سود پیش‌بینی‌شده"
+                        sx={{ gridColumn: { md: "1 / -1" } }}
                         {...form.register("estimated_profit_percentage")}
                         error={
                           !!form.formState.errors.estimated_profit_percentage
