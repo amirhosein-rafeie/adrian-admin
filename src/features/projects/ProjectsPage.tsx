@@ -88,20 +88,43 @@ export const ProjectsPage = () => {
   const detailLabels: Record<string, string> = {
     id: 'شناسه',
     name: 'نام پروژه',
+    title: 'عنوان',
     token_name: 'نام توکن',
     symbol: 'نماد توکن',
     price: 'قیمت',
     status: 'وضعیت',
     type: 'نوع پروژه',
+    category: 'دسته‌بندی',
     options: 'امکانات پروژه',
     description: 'توضیحات',
+    summary: 'خلاصه',
     contract_address: 'آدرس قرارداد',
     owner_wallet: 'کیف پول مالک',
+    wallet_address: 'آدرس کیف پول',
+    address: 'آدرس',
+    project_address: 'آدرس پروژه',
+    location: 'موقعیت',
+    project_location: 'موقعیت پروژه',
+    city: 'شهر',
+    province: 'استان',
+    state: 'ایالت',
+    country: 'کشور',
+    postal_code: 'کد پستی',
+    district: 'منطقه',
+    latitude: 'عرض جغرافیایی',
+    longitude: 'طول جغرافیایی',
+    lat: 'عرض جغرافیایی',
+    lng: 'طول جغرافیایی',
+    deadline: 'ددلاین',
+    start_date: 'تاریخ شروع',
+    end_date: 'تاریخ پایان',
+    due_date: 'تاریخ سررسید',
     created_at: 'تاریخ ایجاد',
     updated_at: 'آخرین بروزرسانی',
-    project_location: 'لوکیشن پروژه',
-    location: 'لوکیشن'
+    published_at: 'تاریخ انتشار'
   };
+
+  const getDetailLabel = (key: string) => detailLabels[key] ?? `فیلد ${key.replace(/_/g, ' ')}`;
 
   const formatDetailValue = (key: string, value: unknown) => {
     if (value === null || value === undefined || value === '') return '—';
@@ -128,7 +151,7 @@ export const ProjectsPage = () => {
         <Stack spacing={0.75}>
           {entries.map(([childKey, childValue]) => (
             <Typography key={childKey} variant="body2" color="text.secondary">
-              {detailLabels[childKey] ?? childKey}: {childValue === null || childValue === undefined || childValue === '' ? '—' : String(childValue)}
+              {getDetailLabel(childKey)}: {childValue === null || childValue === undefined || childValue === '' ? '—' : String(childValue)}
             </Typography>
           ))}
         </Stack>
@@ -206,7 +229,7 @@ export const ProjectsPage = () => {
                     <Grid key={key} item xs={12} sm={6}>
                       <Stack spacing={0.75}>
                         <Typography variant="caption" color="text.secondary" fontWeight={700}>
-                          {detailLabels[key] ?? key}
+                          {getDetailLabel(key)}
                         </Typography>
                         <Typography variant="body2" component="div">
                           {formatDetailValue(key, value)}
