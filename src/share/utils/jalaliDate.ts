@@ -22,3 +22,17 @@ export const gregorianToJalali = (value?: string | null) => {
   if (!parsed.isValid()) return '';
   return parsed.format(JALALI_FORMAT);
 };
+
+const hasTimePart = (value: string) => /T|\s\d{1,2}:\d{2}/.test(value);
+
+export const formatDateToJalali = (value?: string | null, fallback = '—') => {
+  if (!value) return fallback;
+
+  const parsed = moment(value);
+  if (!parsed.isValid()) return fallback;
+
+  const format = hasTimePart(value) ? 'jYYYY/jMM/jDD HH:mm' : JALALI_FORMAT;
+  return parsed.format(format);
+};
+
+export const isDateLikeField = (field: string) => /(?:^|_)(?:date|time|at|deadline)(?:$|_)/i.test(field);

@@ -16,7 +16,7 @@ const CustomDatePicker = (props: DatePickerProps) => {
           sx: {
             backgroundColor: (theme) => theme.palette.background.paper,
             direction: "ltr",
-            width: 350,
+            width: { xs: "100%", sm: 350 },
             ".MuiPickersDay-root": {
               borderRadius: 1.5,
               borderWidth: 0,

@@ -27,6 +27,7 @@ import { queryClient } from '@/services/queryClient';
 import type { get200AdminProjectsResponseJson, getAdminProjectsQueryParams } from '@/share/utils/api/__generated__/types';
 import { PROJECTS_LIST } from '@/share/constants';
 import { clientRequest } from '@/share/utils/api/clientRequest';
+import { formatDateToJalali, isDateLikeField } from '@/share/utils/jalaliDate';
 
 type ProjectRow = {
   id: number;
@@ -174,6 +175,10 @@ export const ProjectsPage = () => {
           ))}
         </Stack>
       );
+    }
+
+    if (typeof value === 'string' && isDateLikeField(key)) {
+      return formatDateToJalali(value, value);
     }
 
     return String(value);
